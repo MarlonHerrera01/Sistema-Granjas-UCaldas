@@ -320,7 +320,7 @@ export default function GestionGranjas() {
                     setUsuarioSeleccionado(0);
                 }}
                 usuarios={usuarios}
-                usuariosGranja={usuariosGranja}
+                usuariosAsignados={usuariosGranja}
                 usuarioSeleccionado={usuarioSeleccionado}
                 setUsuarioSeleccionado={setUsuarioSeleccionado}
                 onAsignar={asignarUsuario}

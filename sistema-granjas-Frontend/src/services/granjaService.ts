@@ -4,7 +4,6 @@ import type { Granja, Usuario, Programa } from '../types/granjaTypes';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Función para obtener headers con token
-// Función para obtener headers con token
 const getHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
   
@@ -41,38 +40,37 @@ export const granjaService = {
   // ========== OPERACIONES CRUD BÁSICAS ==========
   
   // OBTENER todas las granjas
-  // En granjaService.ts - modifica temporalmente la función obtenerGranjas
-async obtenerGranjas(): Promise<Granja[]> {
-  try {
-    console.log('🔍 DEBUG Iniciando obtenerGranjas...');
-    const url = `${API_BASE_URL}/granjas`;
-    console.log('📤 DEBUG URL granjas:', url);
-    
-    const headers = getHeaders();
-    console.log('📋 DEBUG Headers granjas:', headers);
-    console.log('🔑 DEBUG Token para granjas:', localStorage.getItem('authToken'));
-    
-    const response = await fetch(url, {
-      headers: headers
-    });
-    
-    console.log('📊 DEBUG Response status granjas:', response.status);
-    console.log('📊 DEBUG Response headers granjas:', response.headers);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ DEBUG Error response granjas:', errorText);
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+  async obtenerGranjas(): Promise<Granja[]> {
+    try {
+      console.log('🔍 DEBUG Iniciando obtenerGranjas...');
+      const url = `${API_BASE_URL}/granjas`;
+      console.log('📤 DEBUG URL granjas:', url);
+      
+      const headers = getHeaders();
+      console.log('📋 DEBUG Headers granjas:', headers);
+      console.log('🔑 DEBUG Token para granjas:', localStorage.getItem('authToken'));
+      
+      const response = await fetch(url, {
+        headers: headers
+      });
+      
+      console.log('📊 DEBUG Response status granjas:', response.status);
+      console.log('📊 DEBUG Response headers granjas:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ DEBUG Error response granjas:', errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ DEBUG Granjas obtenidas:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ DEBUG Error completo obteniendo granjas:', error);
+      throw error;
     }
-    
-    const data = await response.json();
-    console.log('✅ DEBUG Granjas obtenidas:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ DEBUG Error completo obteniendo granjas:', error);
-    throw error;
-  }
-},
+  },
 
   // OBTENER granja por ID
   async obtenerGranjaPorId(id: number): Promise<Granja> {
@@ -126,32 +124,57 @@ async obtenerGranjas(): Promise<Granja[]> {
 
   // OBTENER usuarios por granja
   async obtenerUsuariosPorGranja(granjaId: number): Promise<Usuario[]> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/usuarios`, {
-      headers: getHeaders()
-    });
-    return handleResponse(response);
-  },
-
-  // ASIGNAR usuario a granja
-  async asignarUsuario(granjaId: number, usuarioId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/usuarios/${usuarioId}`, {
-      method: 'POST',
+    const url = `${API_BASE_URL}/granjas/${granjaId}/usuarios`;
+    console.log('🔗 DEBUG URL obtenerUsuariosPorGranja:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
       headers: getHeaders()
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response obtenerUsuariosPorGranja:', errorText);
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.json();
+  },
+
+  // ASIGNAR usuario a granja
+  async asignarUsuario(granjaId: number, usuarioId: number): Promise<void> {
+    const url = `${API_BASE_URL}/granjas/${granjaId}/usuarios`;
+    console.log('🔗 DEBUG URL asignarUsuario:', url);
+    console.log('📤 DEBUG Body asignarUsuario:', { usuario_id: usuarioId });
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ usuario_id: usuarioId })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response asignarUsuario:', errorText);
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   },
 
   // REMOVER usuario de granja
   async removerUsuario(granjaId: number, usuarioId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/usuarios/${usuarioId}`, {
+    const url = `${API_BASE_URL}/granjas/${granjaId}/usuarios`;
+    console.log('🔗 DEBUG URL removerUsuario:', url);
+    console.log('📤 DEBUG Body removerUsuario:', { usuario_id: usuarioId });
+    
+    const response = await fetch(url, {
       method: 'DELETE',
-      headers: getHeaders()
+      headers: getHeaders(),
+      body: JSON.stringify({ usuario_id: usuarioId })
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response removerUsuario:', errorText);
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   },
@@ -168,32 +191,57 @@ async obtenerGranjas(): Promise<Granja[]> {
 
   // OBTENER programas por granja
   async obtenerProgramasPorGranja(granjaId: number): Promise<Programa[]> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/programas`, {
-      headers: getHeaders()
-    });
-    return handleResponse(response);
-  },
-
-  // ASIGNAR programa a granja
-  async asignarPrograma(granjaId: number, programaId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/programas/${programaId}`, {
-      method: 'POST',
+    const url = `${API_BASE_URL}/granjas/${granjaId}/programas`;
+    console.log('🔗 DEBUG URL obtenerProgramasPorGranja:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
       headers: getHeaders()
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response obtenerProgramasPorGranja:', errorText);
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.json();
+  },
+
+  // ASIGNAR programa a granja
+  async asignarPrograma(granjaId: number, programaId: number): Promise<void> {
+    const url = `${API_BASE_URL}/granjas/${granjaId}/programas`;
+    console.log('🔗 DEBUG URL asignarPrograma:', url);
+    console.log('📤 DEBUG Body asignarPrograma:', { programa_id: programaId });
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ programa_id: programaId })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response asignarPrograma:', errorText);
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   },
 
   // REMOVER programa de granja
   async removerPrograma(granjaId: number, programaId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/granjas/${granjaId}/programas/${programaId}`, {
+    const url = `${API_BASE_URL}/granjas/${granjaId}/programas`;
+    console.log('🔗 DEBUG URL removerPrograma:', url);
+    console.log('📤 DEBUG Body removerPrograma:', { programa_id: programaId });
+    
+    const response = await fetch(url, {
       method: 'DELETE',
-      headers: getHeaders()
+      headers: getHeaders(),
+      body: JSON.stringify({ programa_id: programaId })
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DEBUG Error response removerPrograma:', errorText);
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   }

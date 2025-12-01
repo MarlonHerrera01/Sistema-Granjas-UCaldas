@@ -11,7 +11,15 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
-  rol: string;
+  rol_id: number;
+  rol_nombre: string; // Agregar este campo
+  activo: boolean;
+  fecha_creacion: string;
+}
+export interface Rol {
+  id: number;
+  nombre: string;
+  descripcion?: string;
 }
 
 export interface Programa {
@@ -19,6 +27,7 @@ export interface Programa {
   nombre: string;
   descripcion: string;
   activo: boolean;
+  fecha_creacion?: string;
 }
 
 export interface AsignacionUsuario {

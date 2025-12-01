@@ -1,7 +1,6 @@
-// src/App.tsx
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthContext, useAuthValue } from './hooks/useAuth'; // Estos son los imports correctos
+import { AuthContext, useAuthValue } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import { syncPendingData } from './services/sync';
 import { getToken, checkBackendConnection } from './api/auth';
@@ -14,9 +13,10 @@ import GestionGranjasPage from './pages/GestionGranjas';
 import GestionProgramasPage from './pages/GestionProgramas';
 import GestionLaboresPage from './pages/GestionLabores';
 import GestionUsuariosPage from './pages/GestionUsuarios';
+import GestionLotesPage from './pages/GestionLotes'; // NUEVO IMPORT
 
 function App() {
-  const authValue = useAuthValue(); // Obtener el valor del contexto
+  const authValue = useAuthValue();
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -80,7 +80,7 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={authValue}> {/* Corregido: usar AuthContext.Provider */}
+    <AuthContext.Provider value={authValue}>
       <Router>
         <div className="App">
           {/* Banner de estado del sistema */}
@@ -143,6 +143,13 @@ function App() {
             <Route path="/gestion/usuarios" element={
               <ProtectedRoute>
                 <GestionUsuariosPage />
+              </ProtectedRoute>
+            } />
+
+            {/* NUEVA RUTA PARA LOTES */}
+            <Route path="/gestion/lotes" element={
+              <ProtectedRoute>
+                <GestionLotesPage />
               </ProtectedRoute>
             } />
 

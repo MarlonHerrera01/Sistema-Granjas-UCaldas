@@ -25,21 +25,31 @@ const ModulesGrid: React.FC<ModulesGridProps> = ({ navigate }) => {
             path: '/gestion/programas'
         },
         {
-            id: 'labores',
-            title: 'Labores',
-            description: 'Supervisa tareas y asignaciones',
-            icon: 'fas fa-tasks',
-            color: 'bg-orange-500',
-            path: '/gestion/labores'
-        },
-        {
             id: 'usuarios',
             title: 'Usuarios',
             description: 'Gestión de usuarios del sistema',
             icon: 'fas fa-users',
             color: 'bg-blue-600',
             path: '/gestion/usuarios'
+        },
+        {
+            id: 'lotes', // ← Mismo ID que pasas a DashboardHeader
+            title: 'Gestión de Lotes',
+            description: 'Administra lotes, cultivos y parcelas',
+            icon: 'fas fa-seedling',
+            color: 'bg-blue-500',
+            path: '/gestion/lotes', // ← Misma ruta que en App.tsx
+            permission: 'admin'
+        },
+        {
+            id: 'labores',
+            title: 'Labores',
+            description: 'Supervisa tareas y asignaciones',
+            icon: 'fas fa-tasks',
+            color: 'bg-orange-500',
+            path: '/gestion/labores'
         }
+
     ];
 
     const handleAccess = (path: string) => {

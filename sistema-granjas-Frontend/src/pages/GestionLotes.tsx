@@ -1,19 +1,18 @@
-// src/pages/GestionProgramasPage.tsx
 import React from 'react';
 import DashboardHeader from '../components/DashboardHeader';
-import GestionProgramas from '../components/GestionPrograma';
+import GestionLotes from '../components/GestionLote';
 
-const GestionProgramasPage: React.FC = () => (
+const GestionLotesPage: React.FC = () => (
     <div className="min-h-screen bg-gray-50">
         <DashboardHeader
-            title="Gestión de Programas"
-            selectedModule="programas"
+            title="Gestión de Lotes"
+            selectedModule="lotes"
             onBack={() => window.history.back()}
         />
         <div className="container mx-auto px-4 py-8">
-            <GestionProgramas />
+            <GestionLotes />
         </div>
     </div>
 );
 
-export default GestionProgramasPage;
+export default GestionLotesPage;

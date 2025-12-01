@@ -1,15 +1,11 @@
-// src/services/usuarioService.ts
-import type { Usuario } from '../types/granjaTypes';
+// src/services/usuarioService.ts - Versión completa
+import type { Usuario, Rol } from '../types/granjaTypes';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Función para obtener headers con token
 const getHeaders = (): HeadersInit => {
     const token = localStorage.getItem('token');
-
-    console.log('🔑 DEBUG Token en localStorage:', token);
-    console.log('🔑 DEBUG Token length:', token?.length);
-    console.log('🔑 DEBUG Token primeros 20 chars:', token?.substring(0, 20));
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -18,9 +14,6 @@ const getHeaders = (): HeadersInit => {
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔑 DEBUG Headers completos:', headers);
-    } else {
-        console.warn('⚠️ DEBUG: No hay token en localStorage');
     }
 
     return headers;
@@ -43,47 +36,44 @@ export const usuarioService = {
     // OBTENER todos los usuarios
     async obtenerUsuarios(skip: number = 0, limit: number = 100): Promise<Usuario[]> {
         try {
-            console.log('🔍 DEBUG Iniciando obtenerUsuarios...');
             const url = `${API_BASE_URL}/usuarios/?skip=${skip}&limit=${limit}`;
-            console.log('📤 DEBUG URL completa:', url);
-
-            const headers = getHeaders();
-            console.log('📋 DEBUG Headers a enviar:', headers);
+            console.log('🔍 Obteniendo usuarios:', url);
 
             const response = await fetch(url, {
-                headers: headers,
-                credentials: 'include' // Añadir esto temporalmente
+                headers: getHeaders()
             });
 
-            console.log('📊 DEBUG Response status:', response.status);
-            console.log('📊 DEBUG Response headers:', response.headers);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ DEBUG Error response body:', errorText);
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('✅ DEBUG Usuarios obtenidos:', data);
+            const data = await handleResponse(response);
+            console.log('✅ Usuarios obtenidos:', data.length);
             return data;
         } catch (error) {
-            console.error('❌ DEBUG Error completo obteniendo usuarios:', error);
+            console.error('❌ Error obteniendo usuarios:', error);
             throw error;
         }
     },
 
     // OBTENER usuario por ID
     async obtenerUsuarioPorId(id: number): Promise<Usuario> {
-        const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+        const url = `${API_BASE_URL}/usuarios/${id}`;
+        console.log('🔍 Obteniendo usuario por ID:', url);
+
+        const response = await fetch(url, {
             headers: getHeaders()
         });
         return handleResponse(response);
     },
 
     // CREAR usuario
-    async crearUsuario(datosUsuario: Omit<Usuario, 'id' | 'fecha_creacion'>): Promise<Usuario> {
-        const response = await fetch(`${API_BASE_URL}/usuarios/`, {
+    async crearUsuario(datosUsuario: {
+        nombre: string;
+        email: string;
+        password: string;
+        rol_id: number;
+    }): Promise<Usuario> {
+        const url = `${API_BASE_URL}/usuarios/`;
+        console.log('📤 Creando usuario:', url);
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(datosUsuario)
@@ -92,8 +82,17 @@ export const usuarioService = {
     },
 
     // ACTUALIZAR usuario
-    async actualizarUsuario(id: number, datosUsuario: Partial<Usuario>): Promise<Usuario> {
-        const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+    async actualizarUsuario(id: number, datosUsuario: {
+        nombre?: string;
+        email?: string;
+        rol_id?: number;
+        activo?: boolean;
+        password?: string;
+    }): Promise<Usuario> {
+        const url = `${API_BASE_URL}/usuarios/${id}`;
+        console.log('✏️ Actualizando usuario:', url);
+
+        const response = await fetch(url, {
             method: 'PUT',
             headers: getHeaders(),
             body: JSON.stringify(datosUsuario)
@@ -103,7 +102,10 @@ export const usuarioService = {
 
     // ELIMINAR usuario
     async eliminarUsuario(id: number): Promise<void> {
-        const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+        const url = `${API_BASE_URL}/usuarios/${id}`;
+        console.log('🗑️ Eliminando usuario:', url);
+
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: getHeaders()
         });
@@ -111,16 +113,54 @@ export const usuarioService = {
         if (!response.ok) {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
+    },
+
+    // ========== GESTIÓN DE ROLES ==========
+
+    // OBTENER todos los roles disponibles
+    async obtenerRoles(): Promise<Rol[]> {
+        const url = `${API_BASE_URL}/roles/`;
+        console.log('🎭 Obteniendo roles:', url);
+
+        const response = await fetch(url, {
+            headers: getHeaders()
+        });
+        return handleResponse(response);
+    },
+
+    // CAMBIAR ROL de usuario
+    async cambiarRolUsuario(id: number, rol_id: number): Promise<Usuario> {
+        const url = `${API_BASE_URL}/usuarios/${id}`;
+        console.log('🔄 Cambiando rol usuario:', url);
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ rol_id })
+        });
+
+        return handleResponse(response);
+    },
+
+    // ========== ESTADÍSTICAS ==========
+
+    // Obtener conteo de usuarios por rol
+    async obtenerConteoUsuariosPorRol(): Promise<Record<string, number>> {
+        try {
+            const usuarios = await this.obtenerUsuarios();
+            const conteo: Record<string, number> = {};
+
+            usuarios.forEach(usuario => {
+                const rol = usuario.rol_nombre || 'Sin rol';
+                conteo[rol] = (conteo[rol] || 0) + 1;
+            });
+
+            return conteo;
+        } catch (error) {
+            console.error('❌ Error obteniendo conteo por rol:', error);
+            return {};
+        }
     }
 };
-
-// ========== ALIAS PARA MANTENER COMPATIBILIDAD ==========
-
-// Alias para las funciones existentes
-export const getUsuarios = usuarioService.obtenerUsuarios;
-export const getUsuario = usuarioService.obtenerUsuarioPorId;
-export const createUsuario = usuarioService.crearUsuario;
-export const updateUsuario = usuarioService.actualizarUsuario;
-export const deleteUsuario = usuarioService.eliminarUsuario;
 
 export default usuarioService;
