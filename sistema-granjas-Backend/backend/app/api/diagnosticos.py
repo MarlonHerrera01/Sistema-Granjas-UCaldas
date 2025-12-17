@@ -202,21 +202,24 @@ def asignar_docente(
 @router.post("/{id}/cerrar", response_model=DiagnosticoResponse)
 def cerrar_diagnostico(
     id: int,
-    data: CierreDiagnosticoRequest,
+    data: CierreDiagnosticoRequest,  # Solo tiene "observaciones"
     db: Session = Depends(get_db),
     user: Usuario = Depends(require_role(["docente", "admin"]))
 ):
     obj = get_or_404(db, Diagnostico, id)
-    docente = get_or_404(db, Usuario, data.docente_id)
+    
+    # NO usar data.docente_id porque no existe en CierreDiagnosticoRequest
+    # En cambio, verificamos que el usuario actual sea el docente asignado
     if not obj.docente_id:
         raise HTTPException(400, "No se puede cerrar sin docente asignado")
 
     # Docente solo cierra si es el asignado
-    if docente.rol.nombre not in ["docente", "asesor"] and obj.docente_id != user.id:
+    # (El docente ya viene del token JWT, no del request body)
+    if obj.docente_id != user.id and user.rol.nombre not in ["admin"]:
         raise HTTPException(403, "Solo el docente asignado puede cerrar el diagnóstico")
 
     obj.estado = "cerrado"
-    obj.observaciones = data.observaciones
+    obj.observaciones = data.observaciones  # Aquí usamos las observaciones del request
     obj.fecha_revision = datetime.utcnow()
 
     db.commit()

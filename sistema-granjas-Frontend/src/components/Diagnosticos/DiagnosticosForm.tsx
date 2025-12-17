@@ -242,9 +242,9 @@ const DiagnosticoForm: React.FC<DiagnosticoFormProps> = ({
                             required
                         >
                             <option value="">Seleccionar lote</option>
-                            {lotes.map(lote => (
+                            {Array.isArray(lotes) && lotes.map(lote => (
                                 <option key={lote.id} value={lote.id}>
-                                    {lote.nombre} - {lote.cultivo?.nombre || 'Sin cultivo'}
+                                    {lote.nombre} ({lote.granja_nombre || 'Sin granja'})
                                 </option>
                             ))}
                         </select>

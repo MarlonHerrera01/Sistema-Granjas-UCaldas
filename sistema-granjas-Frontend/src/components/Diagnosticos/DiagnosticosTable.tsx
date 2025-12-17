@@ -72,7 +72,6 @@ const DiagnosticosTable: React.FC<DiagnosticosTableProps> = ({
                 // Por ahora, simulemos una respuesta para depurar
                 const loteData = await loteService.obtenerLote(loteId);
 
-                console.log(`✅ Datos del lote ${loteId}:`, loteData);
 
                 // Extraer nombre y cultivo del lote
                 // Asegúrate de que la API devuelva estos campos

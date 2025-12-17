@@ -41,20 +41,14 @@ export const granjaService = {
   // OBTENER todas las granjas
   async obtenerGranjas(): Promise<Granja[]> {
     try {
-      console.log('🔍 DEBUG Iniciando obtenerGranjas...');
       const url = `${API_BASE_URL}/granjas`;
-      console.log('📤 DEBUG URL granjas:', url);
       
       const headers = getHeaders();
-      console.log('📋 DEBUG Headers granjas:', headers);
-      console.log('🔑 DEBUG Token para granjas:', localStorage.getItem('authToken'));
       
       const response = await fetch(url, {
         headers: headers
       });
       
-      console.log('📊 DEBUG Response status granjas:', response.status);
-      console.log('📊 DEBUG Response headers granjas:', response.headers);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -63,7 +57,6 @@ export const granjaService = {
       }
       
       const data = await response.json();
-      console.log('✅ DEBUG Granjas obtenidas:', data);
       return data;
     } catch (error) {
       console.error('❌ DEBUG Error completo obteniendo granjas:', error);

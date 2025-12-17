@@ -71,9 +71,10 @@ const DetallesRecomendacionModal: React.FC<DetallesRecomendacionModalProps> = ({
     }, [isOpen, recomendacion]);
 
     const cargarDetallesCompletos = async (id: number) => {
+        console.log('🔍 Cargando detalles completos para la recomendación ID:', id);
         try {
             setLoadingDetalles(true);
-            const detalles = await recomendacionService.obtenerVistaCompleta(id);
+            const detalles = await recomendacionService.obtenerRecomendacionPorId(id);
             setRecomendacionDetallada(detalles);
         } catch (err) {
             console.error('Error cargando detalles:', err);
@@ -97,14 +98,16 @@ const DetallesRecomendacionModal: React.FC<DetallesRecomendacionModalProps> = ({
     };
 
     const cargarInformacionAdicional = async (recomendacion: Recomendacion) => {
+        console.log('🔍 Iniciando carga de información adicional para la recomendación:', recomendacion);
         try {
             setLoadingExtra(true);
+            console.log('🔍 Cargando información adicional para la recomendación:', recomendacion);
 
             // 1. Cargar información del lote
             if (recomendacion.lote_id) {
                 try {
-                    const lote = await loteService.obtenerLotePorId(recomendacion.lote_id);
-                    console.log('📊 Información del lote:', lote);
+                    const lote = await loteService.obtenerLote(recomendacion.lote_id);
+                    console.log('Marlon  Información del lote:', lote);
                     setLoteInfo(lote);
 
                     // 2. Si el lote tiene granja_id, cargar información de la granja
@@ -197,6 +200,7 @@ const DetallesRecomendacionModal: React.FC<DetallesRecomendacionModalProps> = ({
     };
 
     const data = recomendacionDetallada || recomendacion;
+    console.log('🔍 Detalles de la recomendación:', data, granjaInfo, loteInfo, diagnosticoInfo);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} width="max-w-4xl">
@@ -345,7 +349,9 @@ const DetallesRecomendacionModal: React.FC<DetallesRecomendacionModalProps> = ({
                                                     Granja ID: {loteInfo.granja_id}
                                                 </p>
                                             ) : (
-                                                <p className="ml-6 text-gray-500">No asignada</p>
+                                                <p className="ml-6 text-gray-500">
+                                                    {data.granja_nombre || `Granja no asignada`}
+                                                </p>
                                             )}
                                         </div>
 

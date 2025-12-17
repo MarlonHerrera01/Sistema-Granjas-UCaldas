@@ -12,6 +12,7 @@ import AgregarEvidenciaModal from './AgregarEvidenciaModal';
 import DetallesDiagnosticoModal from './DetallesDiagnosticoModal';
 import { useAuth } from '../../hooks/useAuth';
 import cultivoService from '../../services/cultivoService';
+import granjaService from '../../services/granjaService';
 
 const GestionDiagnosticos: React.FC = () => {
     const { user } = useAuth();
@@ -61,51 +62,39 @@ const GestionDiagnosticos: React.FC = () => {
 
             setDiagnosticos(diagnosticosData);
 
-            // Cargar lotes
             if (lotes.length === 0) {
                 try {
                     const lotesData = await loteService.obtenerLotes();
-                    console.log('✅ Lotes cargados:', lotesData);
+                    let lotesArray = Array.isArray(lotesData) ? lotesData : (lotesData?.items || []);
 
-                    // Enriquecer cada lote con el nombre del cultivo
-                    const lotesEnriquecidos = await Promise.all(
-                        (Array.isArray(lotesData) ? lotesData : []).map(async (lote) => {
+                    // Obtener nombres de granjas para cada lote
+                    lotesArray = await Promise.all(
+                        lotesArray.map(async (lote) => {
                             try {
-                                // Verificar si el lote tiene cultivo_id
-                                if (lote.cultivo_id) {
-                                    // Obtener el cultivo usando el servicio correspondiente
-                                    // Asegúrate de que esta función exista en tu loteService
-                                    const cultivo = await cultivoService.obtenerCultivoPorId(lote.cultivo_id);
-
-                                    // Crear un nuevo objeto lote con la información del cultivo
+                                if (lote.granja_id) {
+                                    const granja = await granjaService.obtenerGranjaPorId(lote.granja_id);
                                     return {
                                         ...lote,
-                                        cultivo: cultivo ? {
-                                            id: cultivo.id,
-                                            nombre: cultivo.nombre,
-                                            tipo: cultivo.tipo,
-                                            estado: cultivo.estado,
-                                            descripcion: cultivo.descripcion
-                                        } : null
+                                        granja_nombre: granja.nombre || 'Sin nombre'
                                     };
                                 }
-                                console.log(`ℹ️ Lote ${lote.id} no tiene cultivo_id`);
-                                return lote;
-                            } catch (error) {
-                                console.error(`❌ Error obteniendo cultivo para lote ${lote.id}:`, error);
-                                // Retornar el lote sin cambios si hay error
                                 return {
                                     ...lote,
-                                    cultivo: null
+                                    granja_nombre: 'Sin granja'
+                                };
+                            } catch (error) {
+                                console.error(`Error obteniendo granja ${lote.granja_id}:`, error);
+                                return {
+                                    ...lote,
+                                    granja_nombre: 'Error al cargar'
                                 };
                             }
                         })
                     );
-
-                    console.log('✅ Lotes enriquecidos:', lotesEnriquecidos);
-                    setLotes(lotesEnriquecidos);
+                    console.log('Lotes cargados con nombres de granja:', lotesArray);
+                    setLotes(lotesArray);
                 } catch (loteError) {
-                    console.error('❌ Error cargando lotes:', loteError);
+                    console.error('Error cargando lotes:', loteError);
                     setLotes([]);
                 }
             }
@@ -196,6 +185,7 @@ const GestionDiagnosticos: React.FC = () => {
                 tipo: data.tipo,
                 descripcion: data.descripcion,
                 observaciones: data.observaciones || null,
+                evidencias: data.evidencias || [],
                 estado: data.estado || 'abierto', // Asegurar que siempre tenga estado
                 lote_id: data.lote_id,
                 estudiante_id: data.estudiante_id,
@@ -257,7 +247,10 @@ const GestionDiagnosticos: React.FC = () => {
 
     const handleCerrarDiagnostico = async (id: number) => {
         try {
-            const cerrado = await diagnosticoService.cerrarDiagnostico(id);
+            // Preguntar observaciones si es necesario
+            const observaciones = prompt("Ingrese observaciones para el cierre (opcional):");
+
+            const cerrado = await diagnosticoService.cerrarDiagnostico(id, observaciones || '');
             setDiagnosticos(prev => prev.map(d => d.id === id ? cerrado : d));
             toast.success('Diagnóstico cerrado exitosamente');
             setShowCerrarModal(false);
@@ -393,7 +386,7 @@ const GestionDiagnosticos: React.FC = () => {
                             <option value="">Todos los lotes</option>
                             {Array.isArray(lotes) && lotes.map(lote => (
                                 <option key={lote.id} value={lote.id}>
-                                    {lote.nombre} ({lote.cultivo?.nombre || 'Sin cultivo'})
+                                    {lote.nombre} ({lote.granja_nombre || 'Sin granja'})
                                 </option>
                             ))}
                         </select>

@@ -6,7 +6,7 @@ interface RecomendacionesTableProps {
     recomendaciones: Recomendacion[];
     onEditar: (recomendacion: Recomendacion) => void;
     onEliminar: (id: number) => void;
-    onAprobar: (id: number) => void;
+    onAprobar: (recomendacion: Recomendacion) => void; // CAMBIÉ: de (id: number) a (recomendacion: Recomendacion)
     onVerDetalles: (recomendacion: Recomendacion) => void;
     currentUser: any;
 }
@@ -159,7 +159,7 @@ const RecomendacionesTable: React.FC<RecomendacionesTableProps> = ({
 
                                             {puedeAprobar(recomendacion) && (
                                                 <button
-                                                    onClick={() => onAprobar(recomendacion.id)}
+                                                    onClick={() => onAprobar(recomendacion)}
                                                     className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                                                     title="Aprobar"
                                                 >

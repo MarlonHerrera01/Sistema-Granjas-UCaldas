@@ -7,6 +7,12 @@ interface Props {
 }
 
 export default function RoleSelector({ roles, selectedRole, onSelect }: Props) {
+    const formatearNombre = (nombre: string) => {
+        return nombre
+            .split("_") // separa por _
+            .map(p => p.charAt(0).toUpperCase() + p.slice(1)) // convierte inicial a mayúscula
+            .join(" "); // une con espacio
+    };
     return (
         <div className="grid grid-cols-2 gap-3">
             {roles.map((rol) => (
@@ -31,7 +37,7 @@ export default function RoleSelector({ roles, selectedRole, onSelect }: Props) {
                             }
                         ></i>
                     </div>
-                    <p className="font-medium">{rol.nombre}</p>
+                    <p className="font-medium">{formatearNombre(rol.nombre)}</p>
                 </div>
             ))}
         </div>

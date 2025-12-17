@@ -83,6 +83,13 @@ def actualizar_recomendacion(db: Session, recomendacion: Recomendacion, data: Re
     if update_data.get("estado") == "aprobada" and not recomendacion.fecha_aprobacion:
         update_data["fecha_aprobacion"] = datetime.utcnow()
     
+    # Si se está desasignando el diagnóstico (diagnostico_id es None)
+    if "diagnostico_id" in update_data and update_data["diagnostico_id"] is None:
+        # Verificar si hay labores que dependan de esta relación
+        labores_count = db.query(Labor).filter(Labor.recomendacion_id == recomendacion.id).count()
+        if labores_count > 0:
+            raise HTTPException(400, "No se puede desasignar diagnóstico si hay labores asociadas")
+        
     for attr, value in update_data.items():
         setattr(recomendacion, attr, value)
     

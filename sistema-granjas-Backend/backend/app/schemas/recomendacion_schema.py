@@ -55,6 +55,7 @@ class RecomendacionUpdate(BaseModel):
     descripcion: Optional[str] = Field(None, min_length=10, max_length=2000, description="Descripción detallada")
     tipo: Optional[TipoRecomendacion] = Field(None, description="Tipo de recomendación")
     estado: Optional[EstadoRecomendacion] = Field(None, description="Estado de la recomendación")
+    diagnostico_id: Optional[int] = Field(None, gt=0, description="ID del diagnóstico relacionado")  # ← AÑADIR
     fecha_aprobacion: Optional[datetime] = Field(None, description="Fecha de aprobación")
 
     @validator('titulo')

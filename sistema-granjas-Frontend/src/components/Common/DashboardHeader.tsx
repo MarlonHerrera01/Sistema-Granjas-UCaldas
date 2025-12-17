@@ -1,6 +1,8 @@
 // components/DashboardHeader.tsx
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import LogoutButton from '../LogoutButton';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
     title?: string;
@@ -13,13 +15,86 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     selectedModule,
     onBack
 }) => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
+    const navigate = useNavigate();
 
-    const handleLogout = () => {
-        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-            logout();
-        }
+    // Definir qué módulos puede ver cada rol
+    const getModulesByRole = (rol: string | undefined) => {
+        if (!rol) return [];
+
+        const modulesByRole: Record<string, Array<{ name: string, path: string }>> = {
+            admin: [
+                { name: 'Granjas', path: '/gestion/granjas' },
+                { name: 'Programas', path: '/gestion/programas' },
+                { name: 'Lotes', path: '/gestion/lotes' },
+                { name: 'Usuarios', path: '/gestion/usuarios' },
+                { name: 'Cultivos', path: '/gestion/cultivos' },
+                { name: 'Inventario', path: '/gestion/inventario' },
+                { name: 'Diagnósticos', path: '/gestion/diagnosticos' },
+                { name: 'Recomendaciones', path: '/gestion/recomendaciones' },
+                { name: 'Labores', path: '/gestion/labores' }
+            ],
+            asesor: [
+                { name: 'Diagnósticos', path: '/gestion/diagnosticos' },
+                { name: 'Recomendaciones', path: '/gestion/recomendaciones' },
+                { name: 'Labores', path: '/gestion/labores' }
+            ],
+            docente: [
+                { name: 'Diagnósticos', path: '/gestion/diagnosticos' },
+                { name: 'Recomendaciones', path: '/gestion/recomendaciones' },
+                { name: 'Labores', path: '/gestion/labores' }
+            ],
+            talento_humano: [
+                { name: 'Usuarios', path: '/gestion/usuarios' },
+                { name: 'Labores', path: '/gestion/labores' }
+            ],
+            estudiante: [
+                { name: 'Diagnósticos', path: '/gestion/diagnosticos' },
+                { name: 'Recomendaciones', path: '/gestion/recomendaciones' }
+            ],
+            trabajador: [
+                { name: 'Labores', path: '/gestion/labores' }
+            ]
+        };
+
+        return modulesByRole[rol] || [];
     };
+
+    // Obtener icono por rol
+    const getRoleIcon = (rol: string | undefined) => {
+        if (!rol) return 'fas fa-user';
+
+        const roleIcons: Record<string, string> = {
+            admin: 'fas fa-crown',
+            asesor: 'fas fa-chart-line',
+            docente: 'fas fa-chalkboard-teacher',
+            talento_humano: 'fas fa-user-tie',
+            estudiante: 'fas fa-user-graduate',
+            trabajador: 'fas fa-hard-hat'
+        };
+
+        return roleIcons[rol] || 'fas fa-user';
+    };
+
+    // Obtener color por rol
+    const getRoleColor = (rol: string | undefined) => {
+        if (!rol) return 'bg-amber-500';
+
+        const roleColors: Record<string, string> = {
+            admin: 'bg-purple-600',
+            asesor: 'bg-blue-600',
+            docente: 'bg-green-600',
+            talento_humano: 'bg-red-600',
+            estudiante: 'bg-amber-500',
+            trabajador: 'bg-orange-500'
+        };
+
+        return roleColors[rol] || 'bg-amber-500';
+    };
+
+    const userModules = user ? getModulesByRole(user.rol) : [];
+    const roleIcon = getRoleIcon(user?.rol);
+    const roleColor = getRoleColor(user?.rol);
 
     return (
         <header className="bg-white shadow-lg sticky top-0 z-50 border-b">
@@ -27,7 +102,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <div className="max-w-7xl mx-auto px-6 py-4">
                 <div className="flex justify-between items-center">
                     {/* Logo */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 cursor-pointer" onClick={() => navigate('/dashboard')}>
                         <div className="w-12 h-12 bg-green-700 rounded-full flex items-center justify-center">
                             <i className="fas fa-seedling text-white text-xl"></i>
                         </div>
@@ -45,20 +120,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                                     {user.nombre}
                                 </div>
                                 <div className="text-sm text-gray-500 capitalize">
-                                    {user.rol}
+                                    {user.rol?.replace('_', ' ') || 'Usuario'}
                                 </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center">
-                                    <i className="fas fa-user-graduate text-white"></i>
+                                <div className={`w-12 h-12 ${roleColor} rounded-full flex items-center justify-center`}>
+                                    <i className={`${roleIcon} text-white`}></i>
                                 </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
-                                >
-                                    <i className="fas fa-sign-out-alt"></i>
-                                    <span>Cerrar Sesión</span>
-                                </button>
+                                <LogoutButton
+                                    variant="minimal"
+                                    className="px-4 py-2"
+                                />
                             </div>
                         </div>
                     ) : (
@@ -74,35 +146,21 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 </div>
             </div>
 
-            {/* Segunda fila: Navegación (solo en dashboard principal) */}
-            {!selectedModule && (
+            {/* Navegación por roles (mostrar según el rol del usuario) */}
+            {user && !selectedModule && userModules.length > 0 && (
                 <div className="bg-gray-50 border-t">
                     <div className="max-w-7xl mx-auto px-6 py-3">
-                        <nav className="flex space-x-8 justify-center">
-                            <a
-                                href="/gestion/granjas"
-                                className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200"
-                            >
-                                Gestión de Granjas
-                            </a>
-                            <a
-                                href="/gestion/programas"
-                                className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200"
-                            >
-                                Gestión de Programas
-                            </a>
-                            <a
-                                href="/gestion/labores"
-                                className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200"
-                            >
-                                Gestión de Labores
-                            </a>
-                            <a
-                                href="/gestion/usuarios"
-                                className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200"
-                            >
-                                Gestión de Usuarios
-                            </a>
+                        <nav className="flex flex-wrap gap-4 justify-center">
+                            {/* Enlaces filtrados por rol */}
+                            {userModules.map((module) => (
+                                <a
+                                    key={module.path}
+                                    href={module.path}
+                                    className="text-gray-700 hover:text-green-600 font-medium transition-colors duration-200 px-3 py-1 rounded hover:bg-green-50"
+                                >
+                                    {module.name}
+                                </a>
+                            ))}
                         </nav>
                     </div>
                 </div>
@@ -115,7 +173,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                         {onBack && (
                             <button
                                 onClick={onBack}
-                                className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                                className="flex items-center p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                             >
                                 <i className="fas fa-arrow-left mr-2"></i>
                                 Volver al Dashboard
