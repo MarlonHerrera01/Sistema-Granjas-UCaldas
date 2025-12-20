@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 // --- SERVICES DE GRANJA (CRUD y asignaciones específicas de granja)
 import granjaService from "../../services/granjaService";
@@ -11,6 +12,7 @@ import { DetallesGranja } from "./DetallesGranja";
 import { AsignarUsuarioModal } from "../Usuarios/AsignarUsuario";
 import { AsignarProgramaModal } from "../Programas/AsignarPrograma";
 import GranjasTable from "./GranjasTable";
+import exportService from "../../services/exportService";
 
 export default function GestionGranjas() {
     const [granjas, setGranjas] = useState<any[]>([]);
@@ -31,6 +33,8 @@ export default function GestionGranjas() {
     const [programasGranja, setProgramasGranja] = useState<any[]>([]);
     const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<number>(0);
     const [programaSeleccionado, setProgramaSeleccionado] = useState<number>(0);
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
 
     // Formulario
     const [editando, setEditando] = useState(false);
@@ -39,6 +43,45 @@ export default function GestionGranjas() {
         ubicacion: "",
         activo: true,
     });
+
+    const handleExportGranjas = async () => {
+        if (exporting) return;
+
+        setExporting(true);
+        setExportMessage('Exportando granjas...');
+
+        try {
+            const loadingToast = toast.loading('Exportando granjas...');
+            const result = await exportService.exportarGranjas();
+
+            toast.dismiss(loadingToast);
+            toast.success('¡Exportación completada!', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+
+            setTimeout(() => {
+                setExportMessage('');
+            }, 5000);
+        } catch (error: any) {
+            console.error('❌ Error exportando granjas:', error);
+
+            toast.error('Error al exportar granjas', {
+                duration: 4000,
+                position: 'top-right'
+            });
+
+            setExportMessage('Error al exportar.');
+
+            setTimeout(() => {
+                setExportMessage('');
+            }, 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -64,6 +107,10 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error cargando datos:', error);
             setError(error.message || 'Error al cargar los datos');
+            toast.error('Error al cargar los datos', {
+                duration: 4000,
+                position: 'top-right'
+            });
         } finally {
             setCargando(false);
         }
@@ -76,12 +123,28 @@ export default function GestionGranjas() {
             setError(null);
             console.log('📤 Guardando granja...');
 
+            const loadingToast = toast.loading(
+                editando ? 'Actualizando granja...' : 'Creando granja...'
+            );
+
             if (editando) {
                 await granjaService.actualizarGranja(granjaSeleccionada.id, datosFormulario);
                 console.log('✅ Granja actualizada');
+
+                toast.dismiss(loadingToast);
+                toast.success('Granja actualizada exitosamente', {
+                    duration: 3000,
+                    position: 'top-right'
+                });
             } else {
                 await granjaService.crearGranja(datosFormulario);
                 console.log('✅ Granja creada');
+
+                toast.dismiss(loadingToast);
+                toast.success('Granja creada exitosamente', {
+                    duration: 3000,
+                    position: 'top-right'
+                });
             }
 
             await cargarDatos();
@@ -91,6 +154,10 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error guardando granja:', error);
             setError(error.message || 'Error al guardar la granja');
+            toast.error(`Error al guardar la granja: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
@@ -111,40 +178,77 @@ export default function GestionGranjas() {
             setGranjaSeleccionada(granja);
 
             console.log('🔍 Cargando detalles de granja...');
+            const loadingToast = toast.loading('Cargando detalles...');
+
             const [usuarios, programas] = await Promise.all([
                 granjaService.obtenerUsuariosPorGranja(granja.id),
                 granjaService.obtenerProgramasPorGranja(granja.id)
             ]);
 
+            toast.dismiss(loadingToast);
             setUsuariosGranja(usuarios);
             setProgramasGranja(programas);
             setModalDetalles(true);
         } catch (error: any) {
             console.error('❌ Error al cargar detalles:', error);
             setError(error.message || 'Error al cargar los detalles');
+            toast.error('Error al cargar los detalles de la granja', {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
     const manejarEliminar = async (id: number) => {
-        if (!confirm("¿Estás seguro de eliminar esta granja?")) return;
+        // Usar toast para confirmación más elegante
+        const confirmar = window.confirm("¿Estás seguro de eliminar esta granja?");
+        if (!confirmar) return;
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Eliminando granja...');
+
             await granjaService.eliminarGranja(id);
+
+            toast.dismiss(loadingToast);
+            toast.success('Granja eliminada exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Granja eliminada');
             await cargarDatos();
         } catch (error: any) {
             console.error('❌ Error al eliminar granja:', error);
             setError(error.message || 'Error al eliminar la granja');
+            toast.error(`Error al eliminar la granja: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
     const asignarUsuario = async () => {
-        if (!usuarioSeleccionado) return;
+        if (!usuarioSeleccionado) {
+            toast.error('Por favor selecciona un usuario', {
+                duration: 3000,
+                position: 'top-right'
+            });
+            return;
+        }
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Asignando usuario...');
+
             await granjaService.asignarUsuario(granjaSeleccionada.id, usuarioSeleccionado);
+
+            toast.dismiss(loadingToast);
+            toast.success('Usuario asignado exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Usuario asignado');
 
             // Actualizar lista de usuarios de la granja
@@ -156,15 +260,34 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error al asignar usuario:', error);
             setError(error.message || 'Error al asignar usuario');
+            toast.error(`Error al asignar usuario: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
     const asignarPrograma = async () => {
-        if (!programaSeleccionado) return;
+        if (!programaSeleccionado) {
+            toast.error('Por favor selecciona un programa', {
+                duration: 3000,
+                position: 'top-right'
+            });
+            return;
+        }
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Asignando programa...');
+
             await granjaService.asignarPrograma(granjaSeleccionada.id, programaSeleccionado);
+
+            toast.dismiss(loadingToast);
+            toast.success('Programa asignado exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Programa asignado');
 
             // Actualizar lista de programas de la granja
@@ -176,15 +299,29 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error al asignar programa:', error);
             setError(error.message || 'Error al asignar programa');
+            toast.error(`Error al asignar programa: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
     const removerUsuario = async (usuarioId: number) => {
-        if (!confirm("¿Estás seguro de remover este usuario de la granja?")) return;
+        const confirmar = window.confirm("¿Estás seguro de remover este usuario de la granja?");
+        if (!confirmar) return;
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Removiendo usuario...');
+
             await granjaService.removerUsuario(granjaSeleccionada.id, usuarioId);
+
+            toast.dismiss(loadingToast);
+            toast.success('Usuario removido exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Usuario removido');
 
             const usuariosActualizados = await granjaService.obtenerUsuariosPorGranja(granjaSeleccionada.id);
@@ -192,15 +329,29 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error al remover usuario:', error);
             setError(error.message || 'Error al remover usuario');
+            toast.error(`Error al remover usuario: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
     const removerPrograma = async (programaId: number) => {
-        if (!confirm("¿Estás seguro de remover este programa de la granja?")) return;
+        const confirmar = window.confirm("¿Estás seguro de remover este programa de la granja?");
+        if (!confirmar) return;
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Removiendo programa...');
+
             await granjaService.removerPrograma(granjaSeleccionada.id, programaId);
+
+            toast.dismiss(loadingToast);
+            toast.success('Programa removido exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Programa removido');
 
             const programasActualizados = await granjaService.obtenerProgramasPorGranja(granjaSeleccionada.id);
@@ -208,6 +359,10 @@ export default function GestionGranjas() {
         } catch (error: any) {
             console.error('❌ Error al remover programa:', error);
             setError(error.message || 'Error al remover programa');
+            toast.error(`Error al remover programa: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
@@ -223,6 +378,27 @@ export default function GestionGranjas() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Gestión de Granjas</h1>
+
+            {/* Mensaje de exportación */}
+            <div className="flex items-center space-x-3 m-2">
+                {exportMessage && (
+                    <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-green-100 text-green-600'
+                        }`}>
+                        {exportMessage}
+                    </span>
+                )}
+
+                <button
+                    onClick={handleExportGranjas}
+                    disabled={exporting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                >
+                    <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                    <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                </button>
+            </div>
 
             {/* Mostrar error global */}
             {error && (

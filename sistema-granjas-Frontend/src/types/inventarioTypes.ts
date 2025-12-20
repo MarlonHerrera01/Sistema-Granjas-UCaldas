@@ -1,45 +1,64 @@
-// src/types/inventarioTypes.ts
+// ========== CATEGORÍAS ==========
+export interface CategoriaInventario {
+    id: number;
+    nombre: string;
+    descripcion?: string;
+}
 
+export interface CategoriaFormData {
+    nombre: string;
+    descripcion: string;
+}
+
+// ========== HERRAMIENTAS ==========
 export interface Herramienta {
     id: number;
     nombre: string;
-    descripcion: string;
+    descripcion?: string;
     categoria_id: number;
     categoria_nombre?: string;
     cantidad_total: number;
     cantidad_disponible: number;
-    cantidad_en_uso?: number;
-    estado: string;
+    estado: 'disponible' | 'no_disponible' | 'en_mantenimiento' | 'dada_de_baja' | "agotado";
     fecha_creacion?: string;
-    ultima_actualizacion?: string;
-    
-    // Para movimientos
-    movimientos?: MovimientoHerramienta[];
 }
 
+export interface HerramientaFormData {
+    nombre: string;
+    descripcion: string;
+    categoria_id: number;
+    cantidad_total: number;
+    cantidad_disponible: number;
+    estado: 'disponible' | 'no_disponible' | 'en_mantenimiento' | 'dada_de_baja';
+}
+
+// ========== INSUMOS ==========
 export interface Insumo {
     id: number;
     nombre: string;
-    descripcion: string;
+    descripcion?: string;
     programa_id: number;
     programa_nombre?: string;
     cantidad_total: number;
     cantidad_disponible: number;
     unidad_medida: string;
     nivel_alerta: number;
-    estado: string;
+    estado: 'disponible' | 'agotado' | 'bajo_stock' | 'vencido' | 'inactivo';
     fecha_creacion?: string;
-    
-    // Para movimientos
-    movimientos?: MovimientoInsumo[];
 }
 
-export interface CategoriaInventario {
-    id: number;
+export interface InsumoFormData {
     nombre: string;
     descripcion: string;
+    programa_id: number;
+    cantidad_total: number;
+    cantidad_disponible: number;
+    unidad_medida: string;
+    nivel_alerta: number;
+    estado: 'disponible' | 'agotado' | 'bajo_stock' | 'vencido' | 'inactivo';
 }
 
+// ========== MOVIMIENTOS ==========
 export interface MovimientoHerramienta {
     id: number;
     herramienta_id: number;
@@ -47,11 +66,10 @@ export interface MovimientoHerramienta {
     labor_id?: number;
     labor_descripcion?: string;
     cantidad: number;
-    tipo_movimiento: string; // entrada, salida, devolucion
+    tipo_movimiento: 'entrada' | 'salida';
     fecha_movimiento: string;
-    observaciones: string;
-    usuario_id?: number;
-    usuario_nombre?: string;
+    fecha_vencimiento?: Date;
+    observaciones?: string;
 }
 
 export interface MovimientoInsumo {
@@ -61,64 +79,19 @@ export interface MovimientoInsumo {
     labor_id?: number;
     labor_descripcion?: string;
     cantidad: number;
-    tipo_movimiento: string; // entrada, salida
+    tipo_movimiento: 'entrada' | 'salida' | 'ajuste' | 'asignacion' | 'devolucion';
     fecha_movimiento: string;
-    observaciones: string;
-    usuario_id?: number;
-    usuario_nombre?: string;
+    observaciones?: string;
 }
 
-export interface CreateHerramientaDto {
-    nombre: string;
-    descripcion: string;
-    categoria_id: number;
-    cantidad_total?: number;
-    cantidad_disponible?: number;
-}
-
-export interface UpdateHerramientaDto {
-    nombre?: string;
-    descripcion?: string;
-    categoria_id?: number;
-    cantidad_total?: number;
-    cantidad_disponible?: number;
-    estado?: string;
-}
-
-export interface CreateInsumoDto {
-    nombre: string;
-    descripcion: string;
-    programa_id: number;
-    cantidad_total: number;
-    unidad_medida: string;
-    nivel_alerta?: number;
-}
-
-export interface UpdateInsumoDto {
-    nombre?: string;
-    descripcion?: string;
-    programa_id?: number;
-    cantidad_total?: number;
-    unidad_medida?: string;
-    nivel_alerta?: number;
-    estado?: string;
-}
-
-export interface InventarioFilters {
-    tipo?: 'herramienta' | 'insumo';
-    estado?: string;
-    programa_id?: number;
-    categoria_id?: number;
-    skip?: number;
-    limit?: number;
-}
-
-export interface EstadisticasInventario {
+// ========== ESTADÍSTICAS ==========
+export interface InventarioStats {
     total_herramientas: number;
     total_insumos: number;
     herramientas_disponibles: number;
     insumos_disponibles: number;
-    herramientas_bajo_stock: number;
-    insumos_bajo_alerta: number;
-    categorias_herramientas: Array<{ categoria: string; cantidad: number }>;
+    herramientas_agotadas: number;
+    insumos_agotados: number;
+    bajo_stock_insumos: number;
+    movimientos_recientes: number;
 }

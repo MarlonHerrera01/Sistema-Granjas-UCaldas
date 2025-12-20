@@ -42,7 +42,7 @@ const DetallesDiagnosticoModal: React.FC<DetallesDiagnosticoModalProps> = ({
     const cargarEvidencias = async (id: number) => {
         try {
             setLoadingEvidencias(true);
-            console.log('Cargando evidencias para diagnóstico ID:', id);
+            console.log('Cargando evidencias para diagnóstico ID: OEOEO', id);
             const data = await diagnosticoService.obtenerEvidencias(id);
             const evidenciasData = Array.isArray(data) ? data : (data?.items || []);
             console.log('Evidencias cargadas:', evidenciasData);

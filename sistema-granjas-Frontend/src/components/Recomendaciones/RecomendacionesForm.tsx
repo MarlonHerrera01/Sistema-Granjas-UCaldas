@@ -157,13 +157,12 @@ const RecomendacionForm: React.FC<RecomendacionFormProps> = ({
     };
 
     const tiposRecomendacion = [
-        'riego', 'fertilizacion', 'poda', 'cosecha', 'proteccion', 'otro'
+        'aplicación al suelo', 'aplicación foliar', 'podas', 'cosecha y saneamiento', 'manejo de arvenses', 'censo poblacional', 'homiga arriera', 'otro'
     ];
 
     const estadosRecomendacion = [
         { value: 'pendiente', label: 'Pendiente', color: 'text-yellow-600' },
         { value: 'aprobada', label: 'Aprobada', color: 'text-green-600' },
-        { value: 'rechazada', label: 'Rechazada', color: 'text-gray-600' },
         { value: 'en_ejecucion', label: 'En Progreso', color: 'text-blue-600' },
         { value: 'completada', label: 'Completada', color: 'text-purple-600' },
         { value: 'cancelada', label: 'Cancelada', color: 'text-red-600' },

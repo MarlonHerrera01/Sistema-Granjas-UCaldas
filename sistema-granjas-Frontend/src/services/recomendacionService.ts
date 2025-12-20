@@ -235,33 +235,60 @@ export const recomendacionService = {
     }
   },
 
+  // NUEVO MÉTODO: Eliminar recomendación
+  async eliminarRecomendacion(id: number): Promise<void> {
+    try {
+      console.log(`🗑️ Intentando eliminar recomendación ID: ${id}`);
+      
+      const response = await fetch(`${API_BASE_URL}/recomendaciones/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+
+      if (!response.ok) {
+        // Intentar obtener el mensaje de error del servidor
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || errorData.message || `Error ${response.status}: ${response.statusText}`;
+        
+        console.error(`❌ Error eliminando recomendación ID ${id}:`, errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Verificar si la respuesta tiene contenido
+      const responseText = await response.text();
+      
+      // Si hay contenido, intentar parsearlo como JSON
+      if (responseText) {
+        try {
+          const data = JSON.parse(responseText);
+          console.log('✅ Recomendación eliminada correctamente:', data);
+        } catch {
+          console.log('✅ Recomendación eliminada correctamente');
+        }
+      } else {
+        console.log('✅ Recomendación eliminada correctamente (sin contenido en respuesta)');
+      }
+      
+      return;
+    } catch (error) {
+      console.error(`❌ Error en eliminarRecomendacion para ID ${id}:`, error);
+      throw error;
+    }
+  },
+
   async aprobarRecomendacion(id: number, observaciones?: string): Promise<Recomendacion> {
-  const payload = {
-    aprobar: true,
-    observaciones: observaciones || ""  // Si no hay observaciones, envía string vacío
-  };
+    const payload = {
+      aprobar: true,
+      observaciones: observaciones || ""  // Si no hay observaciones, envía string vacío
+    };
 
-  const response = await fetch(`${API_BASE_URL}/recomendaciones/${id}/aprobar`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(payload)
-  });
-  return handleResponse(response);
-},
-
-async rechazarRecomendacion(id: number, observaciones?: string): Promise<Recomendacion> {
-  const payload = {
-    aprobar: false,
-    observaciones: observaciones || ""
-  };
-
-  const response = await fetch(`${API_BASE_URL}/recomendaciones/${id}/rechazar`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(payload)
-  });
-  return handleResponse(response);
-},
+    const response = await fetch(`${API_BASE_URL}/recomendaciones/${id}/aprobar`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    return handleResponse(response);
+  },
 
   async obtenerEstadisticas(): Promise<EstadisticasRecomendaciones> {
     const response = await fetch(`${API_BASE_URL}/recomendaciones/estadisticas/resumen`, {
@@ -335,6 +362,7 @@ export const createRecomendacion = recomendacionService.crearRecomendacion;
 export const updateRecomendacion = recomendacionService.actualizarRecomendacion;
 export const deleteRecomendacion = recomendacionService.eliminarRecomendacion;
 export const approveRecomendacion = recomendacionService.aprobarRecomendacion;
+export const rejectRecomendacion = recomendacionService.rechazarRecomendacion;
 export const getRecomendacionStats = recomendacionService.obtenerEstadisticas;
 
 export default recomendacionService;

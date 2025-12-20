@@ -6,7 +6,7 @@ from enum import Enum
 class TipoDiagnostico(str, Enum):
     NUTRICIONAL = "nutricional"
     PLAGAS = "plagas"
-    BIOLÓGICO = "biológico"
+    CONTROLADORES_BIOLÓGICOS = "controladores_biológicos"
     FENOLOGÍA = "fenología"
 
 class EstadoDiagnostico(str, Enum):

@@ -12,6 +12,8 @@ import AgregarEvidenciaModal from './AgregarEvidenciaModal';
 import DetallesDiagnosticoModal from './DetallesDiagnosticoModal';
 import { useAuth } from '../../hooks/useAuth';
 import cultivoService from '../../services/cultivoService';
+import granjaService from '../../services/granjaService';
+import exportService from '../../services/exportService';
 
 const GestionDiagnosticos: React.FC = () => {
     const { user } = useAuth();
@@ -36,6 +38,28 @@ const GestionDiagnosticos: React.FC = () => {
 
     const [filtros, setFiltros] = useState<DiagnosticoFiltros>({});
     const [estadisticas, setEstadisticas] = useState<any>(null);
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar diagnósticos
+    const handleExportDiagnosticos = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando diagnósticos...');
+
+        try {
+            const result = await exportService.exportarDiagnosticos();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando diagnósticos:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -61,51 +85,39 @@ const GestionDiagnosticos: React.FC = () => {
 
             setDiagnosticos(diagnosticosData);
 
-            // Cargar lotes
             if (lotes.length === 0) {
                 try {
                     const lotesData = await loteService.obtenerLotes();
-                    console.log('✅ Lotes cargados:', lotesData);
+                    let lotesArray = Array.isArray(lotesData) ? lotesData : (lotesData?.items || []);
 
-                    // Enriquecer cada lote con el nombre del cultivo
-                    const lotesEnriquecidos = await Promise.all(
-                        (Array.isArray(lotesData) ? lotesData : []).map(async (lote) => {
+                    // Obtener nombres de granjas para cada lote
+                    lotesArray = await Promise.all(
+                        lotesArray.map(async (lote) => {
                             try {
-                                // Verificar si el lote tiene cultivo_id
-                                if (lote.cultivo_id) {
-                                    // Obtener el cultivo usando el servicio correspondiente
-                                    // Asegúrate de que esta función exista en tu loteService
-                                    const cultivo = await cultivoService.obtenerCultivoPorId(lote.cultivo_id);
-
-                                    // Crear un nuevo objeto lote con la información del cultivo
+                                if (lote.granja_id) {
+                                    const granja = await granjaService.obtenerGranjaPorId(lote.granja_id);
                                     return {
                                         ...lote,
-                                        cultivo: cultivo ? {
-                                            id: cultivo.id,
-                                            nombre: cultivo.nombre,
-                                            tipo: cultivo.tipo,
-                                            estado: cultivo.estado,
-                                            descripcion: cultivo.descripcion
-                                        } : null
+                                        granja_nombre: granja.nombre || 'Sin nombre'
                                     };
                                 }
-                                console.log(`ℹ️ Lote ${lote.id} no tiene cultivo_id`);
-                                return lote;
-                            } catch (error) {
-                                console.error(`❌ Error obteniendo cultivo para lote ${lote.id}:`, error);
-                                // Retornar el lote sin cambios si hay error
                                 return {
                                     ...lote,
-                                    cultivo: null
+                                    granja_nombre: 'Sin granja'
+                                };
+                            } catch (error) {
+                                console.error(`Error obteniendo granja ${lote.granja_id}:`, error);
+                                return {
+                                    ...lote,
+                                    granja_nombre: 'Error al cargar'
                                 };
                             }
                         })
                     );
-
-                    console.log('✅ Lotes enriquecidos:', lotesEnriquecidos);
-                    setLotes(lotesEnriquecidos);
+                    console.log('Lotes cargados con nombres de granja:', lotesArray);
+                    setLotes(lotesArray);
                 } catch (loteError) {
-                    console.error('❌ Error cargando lotes:', loteError);
+                    console.error('Error cargando lotes:', loteError);
                     setLotes([]);
                 }
             }
@@ -196,6 +208,7 @@ const GestionDiagnosticos: React.FC = () => {
                 tipo: data.tipo,
                 descripcion: data.descripcion,
                 observaciones: data.observaciones || null,
+                evidencias: data.evidencias || [],
                 estado: data.estado || 'abierto', // Asegurar que siempre tenga estado
                 lote_id: data.lote_id,
                 estudiante_id: data.estudiante_id,
@@ -232,15 +245,46 @@ const GestionDiagnosticos: React.FC = () => {
     };
 
     const handleEliminarDiagnostico = async (id: number) => {
-        if (!confirm("¿Estás seguro de eliminar este diagnóstico?")) return;
+        if (!window.confirm("¿Estás seguro de eliminar este diagnóstico?")) return;
 
         try {
+            console.log(`🗑️ Intentando eliminar diagnóstico #${id}`);
+
             await diagnosticoService.eliminarDiagnostico(id);
+
+            console.log(`✅ Diagnóstico #${id} eliminado exitosamente`);
+
+            // Actualizar estado local
             setDiagnosticos(prev => prev.filter(d => d.id !== id));
+
+            // Mostrar toast de éxito
             toast.success("Diagnóstico eliminado exitosamente");
+
+            // Recargar estadísticas
             cargarEstadisticas();
+
         } catch (err: any) {
-            toast.error(`Error al eliminar: ${err.message}`);
+            console.error('❌ Error al eliminar diagnóstico:', err);
+
+            // Extraer mensaje de error de diferentes formas
+            let errorMessage = 'Error al eliminar el diagnóstico';
+
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            } else if (typeof err === 'string') {
+                errorMessage = err;
+            } else if (err.data?.message) {
+                errorMessage = err.data.message;
+            }
+            console.log('Mensaje de error a mostrar:', errorMessage);
+
+            // Mostrar toast de error
+            toast.error(errorMessage);
+
+            // También puedes mostrar un alert temporal si el toast no funciona
+            // alert(`Error: ${errorMessage}`);
         }
     };
 
@@ -257,7 +301,10 @@ const GestionDiagnosticos: React.FC = () => {
 
     const handleCerrarDiagnostico = async (id: number) => {
         try {
-            const cerrado = await diagnosticoService.cerrarDiagnostico(id);
+            // Preguntar observaciones si es necesario
+            const observaciones = prompt("Ingrese observaciones para el cierre (opcional):");
+
+            const cerrado = await diagnosticoService.cerrarDiagnostico(id, observaciones || '');
             setDiagnosticos(prev => prev.map(d => d.id === id ? cerrado : d));
             toast.success('Diagnóstico cerrado exitosamente');
             setShowCerrarModal(false);
@@ -349,6 +396,28 @@ const GestionDiagnosticos: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-800">Gestión de Diagnósticos</h1>
+                    <div className="flex justify-between items-center mb-6">
+
+                        <div className="flex items-center space-x-3 m-2">
+                            {exportMessage && (
+                                <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                                    ? 'bg-red-100 text-red-600'
+                                    : 'bg-green-100 text-green-600'
+                                    }`}>
+                                    {exportMessage}
+                                </span>
+                            )}
+
+                            <button
+                                onClick={handleExportDiagnosticos}
+                                disabled={exporting}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                            >
+                                <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                                <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <button
                         onClick={() => setShowCrearModal(true)}
@@ -393,7 +462,7 @@ const GestionDiagnosticos: React.FC = () => {
                             <option value="">Todos los lotes</option>
                             {Array.isArray(lotes) && lotes.map(lote => (
                                 <option key={lote.id} value={lote.id}>
-                                    {lote.nombre} ({lote.cultivo?.nombre || 'Sin cultivo'})
+                                    {lote.nombre} ({lote.granja_nombre || 'Sin granja'})
                                 </option>
                             ))}
                         </select>

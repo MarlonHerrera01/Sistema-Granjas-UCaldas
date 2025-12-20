@@ -10,9 +10,7 @@ class LoteBase(BaseModel):
     programa_id: int
     cultivo_id: Optional[int] = None
     nombre_cultivo: Optional[str] = None
-    tipo_gestion: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
-    duracion_dias: Optional[int] = None
     estado: Optional[str] = "activo"
 
     @field_validator('nombre')
@@ -70,16 +68,7 @@ class LoteBase(BaseModel):
         
         return v
 
-    @field_validator('duracion_dias')
-    def validar_duracion_dias(cls, v):
-        if v is not None:
-            if v < 1:
-                raise ValueError('La duración en días debe ser al menos 1')
-            
-            if v > 3650:  # 10 años máximo
-                raise ValueError('La duración en días no puede ser mayor a 3650 (10 años)')
-        
-        return v
+    
     @field_validator('estado')
     def validar_estado(cls, v):
         estados_permitidos = ['activo', 'inactivo']
@@ -92,11 +81,6 @@ class LoteBase(BaseModel):
     @model_validator(mode='after')
     def validar_fechas_coherentes(cls, values):
         fecha_inicio = values.fecha_inicio
-        duracion_dias = values.duracion_dias
-        
-        # Si se proporciona duración pero no fecha de inicio
-        if duracion_dias and not fecha_inicio:
-            raise ValueError('Si especifica duración en días, debe proporcionar fecha de inicio')
         
         # Validar que la fecha de inicio no sea en el futuro muy lejano
         if fecha_inicio:
@@ -127,9 +111,7 @@ class LoteUpdate(BaseModel):
     programa_id: Optional[int] = None
     cultivo_id: Optional[int] = None
     nombre_cultivo: Optional[str] = None
-    tipo_gestion: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
-    duracion_dias: Optional[int] = None
     estado: Optional[str] = None
 
     @field_validator('nombre')
@@ -161,7 +143,7 @@ class LoteUpdate(BaseModel):
         campos = [
             values.nombre, values.tipo_lote_id, values.granja_id, 
             values.programa_id, values.cultivo_id, values.nombre_cultivo,
-            values.tipo_gestion, values.fecha_inicio, values.duracion_dias, values.estado
+            values.fecha_inicio, values.estado
         ]
         
         if all(campo is None for campo in campos):

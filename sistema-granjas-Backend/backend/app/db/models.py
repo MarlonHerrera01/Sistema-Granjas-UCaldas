@@ -119,9 +119,7 @@ class Lote(Base):
     programa_id = Column(Integer, ForeignKey("programas.id"))
 
     nombre_cultivo = Column(String(100))
-    tipo_gestion = Column(String(100))
     fecha_inicio = Column(DateTime)
-    duracion_dias = Column(Integer)
     estado = Column(String(50), default="activo")
     cultivo_id = Column(Integer, ForeignKey("cultivos_especies.id"))
     
@@ -170,6 +168,7 @@ class Insumo(Base):
     cantidad_disponible = Column(Float, default=0.0)
     unidad_medida = Column(String(50))
     nivel_alerta = Column(Float, default=0.0)
+    fecha_vencimiento = Column(DateTime, nullable=True)
     estado = Column(String(50), default="disponible")
 
     programa = relationship("Programa", back_populates="insumos")

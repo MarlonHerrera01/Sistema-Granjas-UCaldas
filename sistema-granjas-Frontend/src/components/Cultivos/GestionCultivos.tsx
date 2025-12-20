@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import cultivoService from "../../services/cultivoService";
 import granjaService from "../../services/granjaService";
 import { StatsCard } from "../Common/StatsCard";
 import CultivosTable from "./CultivosTable";
 import CultivoForm from "./CultivosForm";
+import exportService from "../../services/exportService";
 
 export default function GestionCultivos() {
     const [cultivos, setCultivos] = useState<any[]>([]);
@@ -36,6 +38,44 @@ export default function GestionCultivos() {
         granja_id: 0,
     });
 
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar cultivos
+    const handleExportCultivos = async () => {
+        if (exporting) return;
+
+        setExporting(true);
+        setExportMessage('Exportando cultivos...');
+
+        try {
+            const loadingToast = toast.loading('Exportando cultivos...');
+            const result = await exportService.exportarCultivos();
+
+            toast.dismiss(loadingToast);
+            toast.success('Exportación completada exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error: any) {
+            console.error('❌ Error exportando cultivos:', error);
+
+            toast.error('Error al exportar cultivos', {
+                duration: 4000,
+                position: 'top-right'
+            });
+
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
+
     useEffect(() => {
         cargarDatos();
     }, []);
@@ -46,13 +86,17 @@ export default function GestionCultivos() {
             setError(null);
 
             console.log('🔄 Cargando datos de cultivos...');
+            const loadingToast = toast.loading('Cargando datos...');
+
             const [datosCultivos, datosGranjas, datosEstadisticas] = await Promise.all([
                 cultivoService.obtenerCultivos(),
                 granjaService.obtenerGranjas(),
                 cultivoService.obtenerEstadisticas()
             ]);
 
+            toast.dismiss(loadingToast);
             console.log('✅ Datos cargados exitosamente');
+
             setCultivos(datosCultivos);
             setGranjas(datosGranjas);
             setEstadisticas(datosEstadisticas);
@@ -60,6 +104,10 @@ export default function GestionCultivos() {
         } catch (error: any) {
             console.error('❌ Error cargando datos:', error);
             setError(error.message || 'Error al cargar los datos');
+            toast.error('Error al cargar los datos de cultivos', {
+                duration: 4000,
+                position: 'top-right'
+            });
         } finally {
             setCargando(false);
         }
@@ -72,11 +120,29 @@ export default function GestionCultivos() {
             setError(null);
             console.log('📤 Guardando cultivo...', datosFormulario);
 
+            const loadingToast = toast.loading(
+                editando ? 'Actualizando cultivo...' : 'Creando cultivo...'
+            );
+
             if (editando && cultivoSeleccionado) {
                 await cultivoService.actualizarCultivo(cultivoSeleccionado.id, datosFormulario);
+
+                toast.dismiss(loadingToast);
+                toast.success('Cultivo actualizado exitosamente', {
+                    duration: 3000,
+                    position: 'top-right'
+                });
+
                 console.log('✅ Cultivo actualizado');
             } else {
                 await cultivoService.crearCultivo(datosFormulario);
+
+                toast.dismiss(loadingToast);
+                toast.success('Cultivo creado exitosamente', {
+                    duration: 3000,
+                    position: 'top-right'
+                });
+
                 console.log('✅ Cultivo creado');
             }
 
@@ -84,9 +150,15 @@ export default function GestionCultivos() {
             setModalCrear(false);
             setEditando(false);
             resetFormulario();
+
         } catch (error: any) {
             console.error('❌ Error guardando cultivo:', error);
             setError(error.message || 'Error al guardar el cultivo');
+
+            toast.error(`Error al guardar cultivo: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
@@ -106,16 +178,32 @@ export default function GestionCultivos() {
     };
 
     const manejarEliminar = async (id: number) => {
-        if (!confirm("¿Estás seguro de eliminar este cultivo/especie?")) return;
+        const confirmar = window.confirm("¿Estás seguro de eliminar este cultivo/especie?\nEsta acción no se puede deshacer.");
+        if (!confirmar) return;
 
         try {
             setError(null);
+            const loadingToast = toast.loading('Eliminando cultivo...');
+
             await cultivoService.eliminarCultivo(id);
+
+            toast.dismiss(loadingToast);
+            toast.success('Cultivo eliminado exitosamente', {
+                duration: 3000,
+                position: 'top-right'
+            });
+
             console.log('✅ Cultivo eliminado');
             await cargarDatos();
+
         } catch (error: any) {
             console.error('❌ Error al eliminar cultivo:', error);
             setError(error.message || 'Error al eliminar el cultivo');
+
+            toast.error(`Error al eliminar cultivo: ${error.message || 'Error desconocido'}`, {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
@@ -143,6 +231,27 @@ export default function GestionCultivos() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Gestión de Cultivos/Especies</h1>
+
+            {/* Mensaje de exportación */}
+            <div className="flex items-center space-x-3 m-2 mb-6">
+                {exportMessage && (
+                    <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-green-100 text-green-600'
+                        }`}>
+                        {exportMessage}
+                    </span>
+                )}
+
+                <button
+                    onClick={handleExportCultivos}
+                    disabled={exporting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                >
+                    <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                    <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                </button>
+            </div>
 
             {/* Mostrar error global */}
             {error && (

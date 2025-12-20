@@ -163,11 +163,11 @@ export const diagnosticoService = {
         errorData.detail || `Error ${response.status} actualizando diagnóstico`
       );
     }
-
+    
     const diagnosticoActualizado: DiagnosticoItem = await response.json();
-
     // 2. Procesar evidencias nuevas si vienen
     if (datos.evidencias?.length) {
+      console.log("📂 Procesando evidencias nuevas para actualización...");
       await Promise.all(
         datos.evidencias.map(async (ev) => {
           try {
@@ -260,11 +260,13 @@ export const diagnosticoService = {
     return handleResponse(response);
   },
 
-  async cerrarDiagnostico(id: number): Promise<DiagnosticoItem> {
+  async cerrarDiagnostico(id: number, observaciones: string = ''): Promise<DiagnosticoItem> {
     const response = await fetch(`${API_BASE_URL}/diagnosticos/${id}/cerrar`, {
       method: 'POST',
-      headers: getHeaders()
+      headers: getHeaders(),
+      body: JSON.stringify({ observaciones })
     });
+
     return handleResponse(response);
   },
 
@@ -327,7 +329,7 @@ export const diagnosticoService = {
   // ===================== AUXILIARES =====================
 
   async obtenerTiposDiagnostico(): Promise<string[]> {
-    return ['nutricional', 'biológico', 'fenología', 'plagas'];
+    return ['nutricional', 'controladores_biológicos', 'fenología', 'plagas'];
   },
 
   async obtenerEstadosDiagnostico(): Promise<string[]> {

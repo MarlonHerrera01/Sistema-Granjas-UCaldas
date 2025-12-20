@@ -4,14 +4,13 @@ from datetime import datetime
 from enum import Enum
 
 class TipoRecomendacion(str, Enum):
-    RIEGO = "riego"
-    FERTILIZACION = "fertilizacion"
-    CONTROL_PLAGAS = "control_plagas"
-    PODA = "poda"
-    SIEMBRA = "siembra"
-    COSECHA = "cosecha"
-    MANEJO_SUELO = "manejo_suelo"
-    NUTRICION = "nutricion"
+    APLICACIÓN_AL_SUELO = "Aplicación al suelo"
+    APLICACIÓN_FOLIAR = "Aplicación foliar"
+    PODAS = "podas"
+    COSECHA_Y_SANEAMIENTO = "Cosecha y saneamiento"
+    MANEJO_DE_ARVENSES = "Manejo de arvenses"
+    CENSO_POBLACIONAL = "Censo poblacional"
+    HORMIGA_ARRIERA = "Hormiga arriera"
     OTRO = "otro"
 
 class EstadoRecomendacion(str, Enum):
@@ -55,6 +54,7 @@ class RecomendacionUpdate(BaseModel):
     descripcion: Optional[str] = Field(None, min_length=10, max_length=2000, description="Descripción detallada")
     tipo: Optional[TipoRecomendacion] = Field(None, description="Tipo de recomendación")
     estado: Optional[EstadoRecomendacion] = Field(None, description="Estado de la recomendación")
+    diagnostico_id: Optional[int] = Field(None, gt=0, description="ID del diagnóstico relacionado")  # ← AÑADIR
     fecha_aprobacion: Optional[datetime] = Field(None, description="Fecha de aprobación")
 
     @validator('titulo')

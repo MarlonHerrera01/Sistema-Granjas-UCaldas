@@ -94,9 +94,9 @@ export const cultivoService = {
 
   // ========== FILTROS ESPECIALES ==========
   
-  // OBTENER cultivos por granja
+  // OBTENER cultivos por granja (usando endpoint específico)
   async obtenerCultivosPorGranja(granjaId: number): Promise<CultivoEspecie[]> {
-    const response = await fetch(`${API_BASE_URL}/cultivos/?granja_id=${granjaId}`, {
+    const response = await fetch(`${API_BASE_URL}/cultivos/granja/${granjaId}`, {
       headers: getHeaders()
     });
     return handleResponse(response);

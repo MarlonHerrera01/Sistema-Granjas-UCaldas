@@ -25,3 +25,6 @@ bcrypt==4.0.1   # <-- Esta línea es la clave para evitar el error
 pydantic[email]==2.7.1
 boto3
 python-multipart
+
+openpyxl
+pandas

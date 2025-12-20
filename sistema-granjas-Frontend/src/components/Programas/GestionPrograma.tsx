@@ -13,6 +13,7 @@ import { DetallesPrograma } from "./DetallesPrograma";
 import { AsignarUsuarioModal } from "../Usuarios/AsignarUsuario";
 import { AsignarGranjaModal } from "../Granjas/AsignarGranja";
 import ProgramasTable from "./ProgramasTable";
+import exportService from "../../services/exportService";
 
 export default function GestionProgramas() {
     const [programas, setProgramas] = useState<any[]>([]);
@@ -33,6 +34,28 @@ export default function GestionProgramas() {
     const [granjasPrograma, setGranjasPrograma] = useState<any[]>([]);
     const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<number>(0);
     const [granjaSeleccionada, setGranjaSeleccionada] = useState<number>(0);
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar programas
+    const handleExportProgramas = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando programas...');
+
+        try {
+            const result = await exportService.exportarProgramas();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando programas:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     // Formulario
     const [editando, setEditando] = useState(false);
@@ -225,6 +248,25 @@ export default function GestionProgramas() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Gestión de Programas</h1>
+            <div className="flex items-center space-x-3 m-2">
+                {exportMessage && (
+                    <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-green-100 text-green-600'
+                        }`}>
+                        {exportMessage}
+                    </span>
+                )}
+
+                <button
+                    onClick={handleExportProgramas}
+                    disabled={exporting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                >
+                    <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                    <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                </button>
+            </div>
 
             {/* Mostrar error global */}
             {error && (

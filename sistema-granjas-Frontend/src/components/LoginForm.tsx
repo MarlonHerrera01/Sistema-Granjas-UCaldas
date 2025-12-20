@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, saveToken } from "../api/auth";
+import { login as loginAPI } from "../api/auth";
+import { useAuth } from "../hooks/useAuth"; // IMPORTANTE: Importar useAuth
 import GoogleLoginButton from "./GoogleLoginButtom";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 export default function LoginForm({ onSwitch }: Props) {
   const navigate = useNavigate();
+  const { login } = useAuth(); // Obtener función login del contexto
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,12 +20,28 @@ export default function LoginForm({ onSwitch }: Props) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      const data = await login(email, password);
-      saveToken(data.access_token);
+      console.log('🔄 Iniciando login...');
+
+      // 1. Llamar al API de login
+      const data = await loginAPI(email, password);
+
+      console.log('✅ Respuesta del servidor recibida');
+
+      // 2. Actualizar el contexto de autenticación (esto actualiza el estado de React)
+      login(data.access_token);
+
+      console.log('✅ Contexto actualizado, redirigiendo...');
+
+      // 3. Mostrar mensaje de bienvenida
       alert(`Bienvenido, ${data.nombre}`);
+
+      // 4. Navegar al dashboard (opcional, App.tsx ya redirige automáticamente)
       navigate("/dashboard");
+
     } catch (err: any) {
+      console.error('❌ Error en login:', err);
       alert(err.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
@@ -61,7 +79,7 @@ export default function LoginForm({ onSwitch }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-green-700 py-2 font-medium text-white hover:bg-green-800 transition"
+        className="w-full rounded-lg bg-green-700 py-2 font-medium text-white hover:bg-green-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Ingresando..." : "Iniciar Sesión"}
       </button>
@@ -76,7 +94,7 @@ export default function LoginForm({ onSwitch }: Props) {
         ¿No tienes cuenta?{" "}
         <span
           onClick={onSwitch}
-          className="cursor-pointer text-green-700 font-semibold"
+          className="cursor-pointer text-green-700 font-semibold hover:underline"
         >
           Regístrate aquí (solo formulario)
         </span>

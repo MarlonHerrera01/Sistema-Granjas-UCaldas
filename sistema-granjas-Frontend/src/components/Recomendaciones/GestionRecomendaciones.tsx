@@ -12,6 +12,8 @@ import DetallesRecomendacionModal from './DetallesRecomendaciones';
 import EstadisticasModal from './Estadisticas';
 import AprobarRecomendacionModal from './AprobarRecomendacion';
 import { useAuth } from '../../hooks/useAuth';
+import granjaService from '../../services/granjaService';
+import exportService from '../../services/exportService';
 
 const GestionRecomendaciones: React.FC = () => {
     const { user } = useAuth();
@@ -27,10 +29,33 @@ const GestionRecomendaciones: React.FC = () => {
     const [showAprobarModal, setShowAprobarModal] = useState(false);
 
     const [selectedRecomendacion, setSelectedRecomendacion] = useState<Recomendacion | null>(null);
-    const [recomendacionAAprobar, setRecomendacionAAprobar] = useState<Recomendacion | null>(null);
+    const [recomendacionAAprobarId, setRecomendacionAAprobarId] = useState<number | null>(null);
+    const [recomendacionAAprobarTitulo, setRecomendacionAAprobarTitulo] = useState<string>('');
     const [lotes, setLotes] = useState<any[]>([]);
     const [docentes, setDocentes] = useState<any[]>([]);
     const [filtros, setFiltros] = useState<RecomendacionFilters>({});
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar recomendaciones
+    const handleExportRecomendaciones = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando recomendaciones...');
+
+        try {
+            const result = await exportService.exportarRecomendaciones();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando recomendaciones:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -46,11 +71,36 @@ const GestionRecomendaciones: React.FC = () => {
             const recomendacionesData = Array.isArray(data) ? data : (data?.items || data || []);
             setRecomendaciones(recomendacionesData);
 
-            // Cargar lotes
             if (lotes.length === 0) {
                 try {
                     const lotesData = await loteService.obtenerLotes();
-                    const lotesArray = Array.isArray(lotesData) ? lotesData : (lotesData?.items || []);
+                    let lotesArray = Array.isArray(lotesData) ? lotesData : (lotesData?.items || []);
+
+                    // Obtener nombres de granjas para cada lote
+                    lotesArray = await Promise.all(
+                        lotesArray.map(async (lote) => {
+                            try {
+                                if (lote.granja_id) {
+                                    const granja = await granjaService.obtenerGranjaPorId(lote.granja_id);
+                                    return {
+                                        ...lote,
+                                        granja_nombre: granja.nombre || 'Sin nombre'
+                                    };
+                                }
+                                return {
+                                    ...lote,
+                                    granja_nombre: 'Sin granja'
+                                };
+                            } catch (error) {
+                                console.error(`Error obteniendo granja ${lote.granja_id}:`, error);
+                                return {
+                                    ...lote,
+                                    granja_nombre: 'Error al cargar'
+                                };
+                            }
+                        })
+                    );
+                    console.log('Lotes cargados con nombres de granja:', lotesArray);
                     setLotes(lotesArray);
                 } catch (loteError) {
                     console.error('Error cargando lotes:', loteError);
@@ -119,50 +169,29 @@ const GestionRecomendaciones: React.FC = () => {
 
     const handleAprobarRecomendacion = async (observaciones: string = '') => {
         console.log('🔄 handleAprobarRecomendacion llamado');
-        console.log('📊 recomendacionAAprobar:', recomendacionAAprobar);
-        console.log('📊 recomendacionAAprobar?.id:', recomendacionAAprobar?.id);
+        console.log('📊 recomendacionAAprobarId:', recomendacionAAprobarId);
 
-        if (!recomendacionAAprobar) {
-            console.error('❌ recomendacionAAprobar es null/undefined');
+        if (!recomendacionAAprobarId) {
+            console.error('❌ recomendacionAAprobarId es null/undefined');
             return;
         }
 
         try {
-            console.log(`📤 Aprobando recomendación ID: ${recomendacionAAprobar}`);
+            console.log(`📤 Aprobando recomendación ID: ${recomendacionAAprobarId}`);
             const aprobada = await recomendacionService.aprobarRecomendacion(
-                recomendacionAAprobar,
+                recomendacionAAprobarId,
                 observaciones
             );
             setRecomendaciones(prev => prev.map(r =>
-                r === recomendacionAAprobar ? aprobada : r
+                r.id === recomendacionAAprobarId ? aprobada : r
             ));
             toast.success('Recomendación aprobada exitosamente');
             setShowAprobarModal(false);
-            setRecomendacionAAprobar(null);
+            setRecomendacionAAprobarId(null);
+            setRecomendacionAAprobarTitulo('');
         } catch (err: any) {
             console.error('Error al aprobar recomendación:', err);
             toast.error(`Error al aprobar recomendación: ${err.message}`);
-        }
-    };
-
-    const handleRechazarRecomendacion = async (observaciones: string = '') => {
-        if (!recomendacionAAprobar) return;
-
-        try {
-            // Asumiendo que tienes un método rechazarRecomendacion en el servicio
-            const rechazada = await recomendacionService.rechazarRecomendacion(
-                recomendacionAAprobar.id,
-                observaciones
-            );
-            setRecomendaciones(prev => prev.map(r =>
-                r === recomendacionAAprobar ? rechazada : r
-            ));
-            toast.success('Recomendación rechazada exitosamente');
-            setShowAprobarModal(false);
-            setRecomendacionAAprobar(null);
-        } catch (err: any) {
-            console.error('Error al rechazar recomendación:', err);
-            toast.error(`Error al rechazar recomendación: ${err.message}`);
         }
     };
 
@@ -178,7 +207,8 @@ const GestionRecomendaciones: React.FC = () => {
     };
 
     const openAprobarModal = (recomendacion: Recomendacion) => {
-        setRecomendacionAAprobar(recomendacion);
+        setRecomendacionAAprobarId(recomendacion.id);
+        setRecomendacionAAprobarTitulo(recomendacion.titulo || `Recomendación #${recomendacion.id}`);
         setShowAprobarModal(true);
     };
 
@@ -198,7 +228,25 @@ const GestionRecomendaciones: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-800">Gestión de Recomendaciones</h1>
+                    <div className="flex items-center space-x-3 m-2">
+                        {exportMessage && (
+                            <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-green-100 text-green-600'
+                                }`}>
+                                {exportMessage}
+                            </span>
+                        )}
 
+                        <button
+                            onClick={handleExportRecomendaciones}
+                            disabled={exporting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                        >
+                            <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                            <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                        </button>
+                    </div>
                     <div className="flex space-x-3">
                         <button
                             onClick={() => setShowEstadisticasModal(true)}
@@ -346,17 +394,17 @@ const GestionRecomendaciones: React.FC = () => {
                 onClose={() => setShowEstadisticasModal(false)}
             />
 
-            {/* MODAL APROBAR/RECHAZAR */}
-            {recomendacionAAprobar && (
+            {/* MODAL APROBAR */}
+            {recomendacionAAprobarId && (
                 <AprobarRecomendacionModal
                     isOpen={showAprobarModal}
                     onClose={() => {
                         setShowAprobarModal(false);
-                        setRecomendacionAAprobar(null);
+                        setRecomendacionAAprobarId(null);
+                        setRecomendacionAAprobarTitulo('');
                     }}
                     onAprobar={handleAprobarRecomendacion}
-                    onRechazar={handleRechazarRecomendacion}
-                    tituloRecomendacion={recomendacionAAprobar.titulo}
+                    tituloRecomendacion={recomendacionAAprobarTitulo}
                 />
             )}
 

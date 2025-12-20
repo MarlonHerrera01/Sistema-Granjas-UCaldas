@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-
+from app.db.models import CultivoEspecie
 from app.db.database import get_db
 from app.core.dependencies import require_role
 from app.CRUD.cultivos_especies import (
@@ -44,3 +44,18 @@ def eliminar(id: int, db: Session = Depends(get_db), _=role_required):
         raise HTTPException(404, "No encontrado")
     delete(db, item)
     return {"message": "✅ Eliminado correctamente"}
+
+@router.get("/granja/{granja_id}", response_model=List[CultivoEspecieResponse])
+def obtener_cultivos_por_granja(granja_id: int, db: Session = Depends(get_db), _=role_required):
+    """
+    Obtener todos los cultivos de una granja específica
+    """
+    cultivos = db.query(CultivoEspecie).filter(
+        CultivoEspecie.granja_id == granja_id,
+        CultivoEspecie.estado == "activo"
+    ).all()
+    
+    if not cultivos:
+        return []  # Retorna lista vacía si no hay cultivos
+    
+    return cultivos

@@ -16,6 +16,7 @@ import EstadisticasLaboresModal from '../../components/Labores/Estadisticas';
 import AsignarRecursosModal from '../../components/Labores/AsignarRecursos';
 import CompletarLaborModal from '../../components/Labores/CompletarLabores';
 import { useAuth } from '../../hooks/useAuth';
+import exportService from '../../services/exportService';
 
 const GestionLaboresPage: React.FC = () => {
     const { user } = useAuth();
@@ -41,7 +42,28 @@ const GestionLaboresPage: React.FC = () => {
     const [tiposLabor, setTiposLabor] = useState<any[]>([]);
 
     const [filtros, setFiltros] = useState<LaborFilters>({});
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
 
+    // Handler para exportar labores
+    const handleExportLabores = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando labores...');
+
+        try {
+            const result = await exportService.exportarLabores();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando labores:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
     useEffect(() => {
         cargarDatos();
     }, [filtros]);
@@ -230,7 +252,25 @@ const GestionLaboresPage: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-800">Gestión de Labores</h1>
+                    <div className="flex items-center space-x-3 m-2">
+                        {exportMessage && (
+                            <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-green-100 text-green-600'
+                                }`}>
+                                {exportMessage}
+                            </span>
+                        )}
 
+                        <button
+                            onClick={handleExportLabores}
+                            disabled={exporting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                        >
+                            <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                            <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                        </button>
+                    </div>
                     <div className="flex space-x-3">
                         <button
                             onClick={() => setShowEstadisticasModal(true)}

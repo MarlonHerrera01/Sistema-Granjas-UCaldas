@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator, model_validator
 from typing import Optional
+from datetime import date
 import re
 
 class InsumoBase(BaseModel):
@@ -10,7 +11,18 @@ class InsumoBase(BaseModel):
     cantidad_disponible: float = 0.0
     unidad_medida: Optional[str] = None
     nivel_alerta: float = 0.0
+    fecha_vencimiento: Optional[date] = None
     estado: Optional[str] = "disponible"
+    
+    @field_validator('fecha_vencimiento')
+    def validar_fecha_vencimiento(cls, v):
+        if v is not None:
+            hoy = date.today()
+
+            if v <= hoy:
+                raise ValueError("La fecha de vencimiento debe ser una fecha futura")
+
+        return v
 
     @field_validator('nombre')
     def validar_nombre(cls, v):
@@ -129,6 +141,16 @@ class InsumoUpdate(BaseModel):
     unidad_medida: Optional[str] = None
     nivel_alerta: Optional[float] = None
     estado: Optional[str] = None
+    fecha_vencimiento: Optional[date] = None
+
+    @field_validator('fecha_vencimiento')
+    def validar_fecha_vencimiento_update(cls, v):
+        if v is not None:
+            hoy = date.today()
+
+            if v <= hoy:
+                raise ValueError("La fecha de vencimiento debe ser futura")
+        return v
 
     @field_validator('nombre')
     def validar_nombre_update(cls, v):
