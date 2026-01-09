@@ -37,6 +37,7 @@ const GestionRecomendaciones: React.FC = () => {
     // Estados específicos para exportación
     const [exporting, setExporting] = useState(false);
     const [exportMessage, setExportMessage] = useState('');
+    const rolesPermitidos = [1, 2, 5, 6]; // IDs de roles permitidos para crear recomendaciones
 
     // Handler para exportar recomendaciones
     const handleExportRecomendaciones = async () => {
@@ -219,7 +220,7 @@ const GestionRecomendaciones: React.FC = () => {
         if (user.rol_id === 2 || user.rol_id === 5) return r.docente_id === user.id; // Docente ve las que creó
         return true; // Estudiantes ven todas por ahora
     }) : [];
-
+    console.log("Rol", user, rolesPermitidos.find(r => r === user?.rol_id));
     // RENDER -----------------------------------------------------------
     return (
         <div className="p-6">
@@ -238,14 +239,14 @@ const GestionRecomendaciones: React.FC = () => {
                             </span>
                         )}
 
-                        <button
+                        {(user && user.rol_id === 1) && (<button
                             onClick={handleExportRecomendaciones}
                             disabled={exporting}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
                         >
                             <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
                             <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
-                        </button>
+                        </button>)}
                     </div>
                     <div className="flex space-x-3">
                         <button
@@ -256,13 +257,14 @@ const GestionRecomendaciones: React.FC = () => {
                             Estadísticas
                         </button>
 
-                        <button
-                            onClick={() => setShowCrearModal(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
-                        >
-                            <i className="fas fa-plus mr-2"></i>
-                            Nueva Recomendación
-                        </button>
+                        {(user && rolesPermitidos.includes(user.rol_id)) && (
+                            <button
+                                onClick={() => setShowCrearModal(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
+                            >
+                                <i className="fas fa-plus mr-2"></i>
+                                Nueva Recomendación
+                            </button>)}
                     </div>
                 </div>
 

@@ -21,6 +21,7 @@ const RecomendacionesTable: React.FC<RecomendacionesTableProps> = ({
 }) => {
 
     // Función para obtener el color del estado
+    const rolesPermitidos = [1, 2, 5, 6]; // IDs de roles permitidos para ver información de recomendaciones
     const getEstadoBadge = (estado: string) => {
         const estados: Record<string, { color: string; icon: string }> = {
             pendiente: { color: 'bg-yellow-100 text-yellow-800', icon: 'fas fa-clock' },
@@ -42,19 +43,19 @@ const RecomendacionesTable: React.FC<RecomendacionesTableProps> = ({
 
     // Funciones de permisos
     const puedeEditar = (recomendacion: Recomendacion) => {
-        if (currentUser?.rol_id === 1) return true; // Admin
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true; // Admin
         if (recomendacion.docente_id === currentUser?.id && recomendacion.estado !== 'completada') return true;
         return false;
     };
 
     const puedeAprobar = (recomendacion: Recomendacion) => {
-        if (currentUser?.rol_id === 1) return recomendacion.estado === 'pendiente'; // Admin
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return recomendacion.estado === 'pendiente'; // Admin
         if (recomendacion.docente_id === currentUser?.id) return recomendacion.estado === 'pendiente';
         return false;
     };
 
     const puedeEliminar = (recomendacion: Recomendacion) => {
-        if (currentUser?.rol_id === 1) return true;
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true;
         if (recomendacion.docente_id === currentUser?.id && recomendacion.estado === 'pendiente') return true;
         return false;
     };

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.schemas.insumo_schema import (
     InsumoCreate, InsumoUpdate, InsumoResponse
 )
@@ -11,7 +11,7 @@ from app.CRUD import insumos as crud
 router = APIRouter(prefix="/insumos", tags=["Insumos"])
 
 # ✅ Admin, Asesor y Talento Humano
-role_required = Depends(require_role(["admin", "asesor", "talento_humano"]))
+role_required = Depends(require_any_role(["admin", "asesor", "talento_humano"]))
 
 @router.get("/", response_model=list[InsumoResponse])
 def listar(db: Session = Depends(get_db), _=role_required):

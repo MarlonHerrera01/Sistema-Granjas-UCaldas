@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_any_role
 from app.export import ExportService
 
 router = APIRouter(prefix="/export", tags=["Exportación"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/export", tags=["Exportación"])
 async def export_backup_excel(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "docente"]))
 ):
     try:
         return ExportService(db, usuario).export_todo_excel()
@@ -24,7 +24,7 @@ async def export_backup_excel(
 async def export_granjas(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         return ExportService(db, usuario).export_granjas_excel()
@@ -38,7 +38,7 @@ async def export_lotes(
     lote_id: int = Query(None),
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor", "estudiante"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor", "estudiante"]))
 ):
     try:
         return ExportService(db, usuario).export_lotes_excel(
@@ -53,7 +53,7 @@ async def export_lotes(
 async def export_diagnosticos(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         return ExportService(db, usuario).export_diagnosticos_excel()
@@ -67,7 +67,7 @@ async def export_recomendaciones(
     tipo: str = Query(None),
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         filtros = {}
@@ -86,7 +86,7 @@ async def export_labores(
     estado: str = Query(None),
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         filtros = {}
@@ -102,7 +102,7 @@ async def export_labores(
 async def export_inventario(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         return ExportService(db, usuario).export_inventario_excel()
@@ -116,7 +116,7 @@ async def export_usuarios(
     activo: bool = Query(None),
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin"]))
+    _ = Depends(require_any_role(["admin"]))
 ):
     try:
         filtros = {}
@@ -134,7 +134,7 @@ async def export_usuarios(
 async def export_programas(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "docente"]))
 ):
     try:
         return ExportService(db, usuario).export_programas_excel()
@@ -146,7 +146,7 @@ async def export_programas(
 async def export_cultivos(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente", "asesor"]))
+    _ = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     try:
         return ExportService(db, usuario).export_cultivos_excel()
@@ -158,7 +158,7 @@ async def export_cultivos(
 async def export_movimientos(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "docente"]))
 ):
     try:
         return ExportService(db, usuario).export_movimientos_excel()
@@ -170,7 +170,7 @@ async def export_movimientos(
 async def export_resumen(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "docente"]))
 ):
     try:
         return ExportService(db, usuario).export_resumen_excel()

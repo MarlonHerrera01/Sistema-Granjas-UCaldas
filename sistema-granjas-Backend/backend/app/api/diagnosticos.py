@@ -10,7 +10,7 @@ from app.schemas.diagnostico_schema import (
     AsignacionDocenteRequest, CierreDiagnosticoRequest,
     EstadisticasDiagnosticosResponse
 )
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_any_role
 
 router = APIRouter(prefix="/diagnosticos", tags=["diagnosticos"])
 
@@ -34,7 +34,7 @@ def listar_diagnosticos(
     estudiante_id: Optional[int] = None,
     docente_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    user: Usuario = Depends(get_current_user)
+    user: Usuario = Depends(require_any_role(["admin", "docente", "asesor", "estudiante"]))
 ):
     query = db.query(Diagnostico)
 
@@ -78,7 +78,7 @@ def listar_diagnosticos(
 def crear_diagnostico(
     data: DiagnosticoCreate,
     db: Session = Depends(get_db),
-    user: Usuario = Depends(require_role(["estudiante", "docente", "admin"]))
+    user: Usuario = Depends(require_any_role(["estudiante", "docente", "admin", "asesor"]))
 ):
     # Estudiante solo puede crearse diagnósticos a si mismo
     if user.rol.nombre == "estudiante" and data.estudiante_id != user.id:
@@ -158,7 +158,7 @@ def actualizar_diagnostico(
 def eliminar_diagnostico(
     id: int,
     db: Session = Depends(get_db),
-    user: Usuario = Depends(require_role(["admin"]))
+    user: Usuario = Depends(require_any_role(["admin", "docente", "asesor"]))
 ):
     obj = get_or_404(db, Diagnostico, id)
 
@@ -176,7 +176,7 @@ def asignar_docente(
     id: int,
     data: AsignacionDocenteRequest,
     db: Session = Depends(get_db),
-    user: Usuario = Depends(require_role(["docente", "admin"]))
+    user: Usuario = Depends(require_any_role(["docente", "admin"]))
 ):
     obj = get_or_404(db, Diagnostico, id)
 
@@ -204,7 +204,7 @@ def cerrar_diagnostico(
     id: int,
     data: CierreDiagnosticoRequest,  # Solo tiene "observaciones"
     db: Session = Depends(get_db),
-    user: Usuario = Depends(require_role(["docente", "admin"]))
+    user: Usuario = Depends(require_any_role(["docente", "admin"]))
 ):
     obj = get_or_404(db, Diagnostico, id)
     
@@ -232,7 +232,7 @@ def cerrar_diagnostico(
 @router.get("/estadisticas/resumen", response_model=EstadisticasDiagnosticosResponse)
 def obtener_estadisticas(
     db: Session = Depends(get_db),
-    user: Usuario = Depends(require_role(["docente", "admin"]))
+    user: Usuario = Depends(require_any_role(["docente", "admin","asesor", "estudiante"]))
 ):
     query = db.query(Diagnostico)
     if user.rol.nombre not in ["docente", "asesor"]:

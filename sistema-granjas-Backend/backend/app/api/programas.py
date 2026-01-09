@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.schemas.programa_schema import (
     ProgramaCreate, ProgramaResponse, ProgramaUpdate,
     AsignacionUsuarioPrograma, AsignacionGranjaPrograma
@@ -22,12 +22,12 @@ router = APIRouter(prefix="/programas", tags=["Programas"])
 # Endpoints básicos existentes
 @router.get("/", response_model=List[ProgramaResponse])
 def listar_programas(db: Session = Depends(get_db),
-                     current_user: dict = Depends(require_role(["admin"]))):
+                     current_user: dict = Depends(require_any_role(["admin"]))):
     return get_programas(db)
 
 @router.get("/{programa_id}", response_model=ProgramaResponse)
 def obtener_programa(programa_id: int, db: Session = Depends(get_db),
-                     current_user: dict = Depends(require_role(["admin"]))):
+                     current_user: dict = Depends(require_any_role(["admin"]))):
     programa = get_programa(db, programa_id)
     if not programa:
         raise HTTPException(404, "Programa no encontrado")
@@ -35,13 +35,13 @@ def obtener_programa(programa_id: int, db: Session = Depends(get_db),
 
 @router.post("/", response_model=ProgramaResponse, status_code=201)
 def crear_programa(data: ProgramaCreate, db: Session = Depends(get_db),
-                   current_user: dict = Depends(require_role(["admin"]))):
+                   current_user: dict = Depends(require_any_role(["admin"]))):
     return create_programa(db, data)
 
 @router.put("/{programa_id}", response_model=ProgramaResponse)
 def actualizar_programa(programa_id: int, data: ProgramaUpdate,
                         db: Session = Depends(get_db),
-                        current_user: dict = Depends(require_role(["admin"]))):
+                        current_user: dict = Depends(require_any_role(["admin"]))):
     programa = get_programa(db, programa_id)
     if not programa:
         raise HTTPException(404, "Programa no encontrado")
@@ -49,7 +49,7 @@ def actualizar_programa(programa_id: int, data: ProgramaUpdate,
 
 @router.delete("/{programa_id}")
 def eliminar_programa(programa_id: int, db: Session = Depends(get_db),
-                      current_user: dict = Depends(require_role(["admin"]))):
+                      current_user: dict = Depends(require_any_role(["admin"]))):
     programa = get_programa(db, programa_id)
     if not programa:
         raise HTTPException(404, "Programa no encontrado")
@@ -63,7 +63,7 @@ def asignar_usuario_a_programa(
     programa_id: int,
     data: AsignacionUsuarioPrograma,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Asignar un usuario a un programa"""
     programa = asignar_usuario_programa(db, programa_id, data.usuario_id)
@@ -74,7 +74,7 @@ def desasignar_usuario_de_programa(
     programa_id: int,
     usuario_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Desasignar un usuario de un programa"""
     return desasignar_usuario_programa(db, programa_id, usuario_id)
@@ -83,7 +83,7 @@ def desasignar_usuario_de_programa(
 def listar_usuarios_del_programa(
     programa_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Listar todos los usuarios asignados a un programa"""
     return listar_usuarios_programa(db, programa_id)
@@ -95,7 +95,7 @@ def asignar_granja_a_programa(
     programa_id: int,
     data: AsignacionGranjaPrograma,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Asignar una granja a un programa"""
     programa = asignar_granja_programa(db, programa_id, data.granja_id)
@@ -106,7 +106,7 @@ def desasignar_granja_de_programa(
     programa_id: int,
     granja_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Desasignar una granja de un programa"""
     return desasignar_granja_programa(db, programa_id, granja_id)
@@ -115,7 +115,7 @@ def desasignar_granja_de_programa(
 def listar_granjas_del_programa(
     programa_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role(["admin"]))
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     """Listar todas las granjas asignadas a un programa"""
     return listar_granjas_programa(db, programa_id)

@@ -371,7 +371,7 @@ const GestionDiagnosticos: React.FC = () => {
         if (user.rol_id === 1) return true;
 
         // Docente/Asesor ve los que le asignaron o creó
-        if (user.rol_id === 2 || user.rol_id === 3) {
+        if (user.rol_id === 2 || user.rol_id === 5) {
             return d.docente_id === user.id || d.estudiante_id === user.id;
         }
 
@@ -408,14 +408,14 @@ const GestionDiagnosticos: React.FC = () => {
                                 </span>
                             )}
 
-                            <button
+                            {(user && user.rol_id === 1) && (<button
                                 onClick={handleExportDiagnosticos}
                                 disabled={exporting}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
                             >
                                 <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
                                 <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
-                            </button>
+                            </button>)}
                         </div>
                     </div>
 

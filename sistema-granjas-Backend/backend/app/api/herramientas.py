@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.CRUD.herramientas import (
     get_all, get, create, update, delete
 )
@@ -14,7 +14,7 @@ from app.schemas.herramienta_schema import (
 router = APIRouter(prefix="/herramientas", tags=["Herramientas"])
 
 # ✅ Permisos
-role_admin_th = Depends(require_role(["admin", "talento_humano", "asesor"]))
+role_admin_th = Depends(require_any_role(["admin", "talento_humano", "asesor"]))
 
 
 @router.get("/", response_model=List[HerramientaResponse])

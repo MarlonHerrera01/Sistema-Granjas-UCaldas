@@ -262,14 +262,14 @@ const GestionLaboresPage: React.FC = () => {
                             </span>
                         )}
 
-                        <button
+                        {(user && user.rol_id === 1) && (<button
                             onClick={handleExportLabores}
                             disabled={exporting}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
                         >
                             <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
                             <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
-                        </button>
+                        </button>)}
                     </div>
                     <div className="flex space-x-3">
                         <button
@@ -280,7 +280,7 @@ const GestionLaboresPage: React.FC = () => {
                             Estadísticas
                         </button>
 
-                        {(user?.rol_id === 1 || user?.rol_id === 2 || user?.rol_id === 5) && (
+                        {(user && [1, 6].includes(user.rol_id)) && (
                             <button
                                 onClick={() => setShowCrearModal(true)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"

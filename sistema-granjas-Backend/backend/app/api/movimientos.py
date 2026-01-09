@@ -4,7 +4,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from app.db.database import get_db
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_any_role
 from app.CRUD.movimientos import (
     listar_movimientos_herramientas_crud,
     listar_movimientos_insumos_crud,
@@ -31,7 +31,7 @@ def listar_movimientos_herramientas(
     fecha_hasta: Optional[datetime] = None,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano", "docente"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "docente"]))
 ):
     """
     Listar movimientos de herramientas con filtros
@@ -51,7 +51,7 @@ def listar_movimientos_insumos(
     fecha_hasta: Optional[datetime] = None,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano", "docente"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "docente"]))
 ):
     """
     Listar movimientos de insumos con filtros
@@ -65,7 +65,7 @@ def obtener_movimiento_herramienta(
     movimiento_id: int,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano", "docente"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "docente"]))
 ):
     """
     Obtener un movimiento específico de herramienta
@@ -80,7 +80,7 @@ def obtener_movimiento_insumo(
     movimiento_id: int,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano", "docente"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "docente"]))
 ):
     """
     Obtener un movimiento específico de insumo
@@ -112,7 +112,7 @@ def obtener_estadisticas_movimientos(
     dias: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano"]))
+    _ = Depends(require_any_role(["admin", "talento_humano"]))
 ):
     """
     Obtener estadísticas de movimientos en un período

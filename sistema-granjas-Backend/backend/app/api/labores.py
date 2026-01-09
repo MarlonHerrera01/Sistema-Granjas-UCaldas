@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
-from app.core.dependencies import require_role, get_current_user
+from app.core.dependencies import require_any_role, get_current_user
 from app.CRUD.labores import (
     crear_labor_crud, listar_labores_crud, obtener_labor_objeto, 
     obtener_labor_dict, actualizar_labor_crud, eliminar_labor_crud,
@@ -24,7 +24,7 @@ def crear_labor(
     data: LaborCreate,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano"]))
+    _ = Depends(require_any_role(["admin", "talento_humano"]))
 ):
     """
     Crear una nueva labor
@@ -43,7 +43,7 @@ def listar_labores(
     recomendacion_id: Optional[int] = None,
     tipo_labor_id: Optional[int] = None,  # ✅ AGREGADO: Filtro por tipo de labor
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano"]))
 ):
     """Listar labores con filtros"""
     return listar_labores_crud(
@@ -72,7 +72,7 @@ def actualizar_labor(
     id: int,
     data: LaborUpdate,
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano"]))
 ):
     """
     Actualizar una labor.
@@ -89,7 +89,7 @@ def eliminar_labor(
     id: int,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin"]))
+    _ = Depends(require_any_role(["admin"]))
 ):
     """Eliminar una labor"""
     labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto para eliminar
@@ -107,7 +107,7 @@ def asignar_herramienta(
     data: AsignacionHerramientaRequest,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
@@ -121,7 +121,7 @@ def asignar_insumo(
     data: AsignacionInsumoRequest,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "talento_humano"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
@@ -146,7 +146,7 @@ def registrar_avance(
 def completar_labor(
     id: int,
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
@@ -160,7 +160,7 @@ def devolver_herramienta(
     movimiento_id: int,
     cantidad: int = Query(..., gt=0),
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
@@ -173,12 +173,12 @@ def devolver_insumo(
     movimiento_id: int,
     cantidad: float = Query(..., gt=0),
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     labor = obtener_labor_objeto(db, id, usuario)
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
-    return devolver_insumo_crud(db, labor, movimiento_id, cantidad, usuario)
+    return devolver_insumo(db, labor, movimiento_id, cantidad, usuario)
 
 
 # === ENDPOINTS ADICIONALES ===
@@ -188,7 +188,7 @@ def listar_labores_trabajador(
     limit: int = Query(100, ge=1, le=1000),
     estado: Optional[str] = None,
     db: Session = Depends(get_db),
-    usuario = Depends(get_current_user)
+    usuario = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     if usuario.rol.nombre not in ["trabajador", "admin"]:
         raise HTTPException(403, "Solo disponible para trabajadores")
@@ -211,6 +211,6 @@ def listar_labores_recomendacion(
 def obtener_estadisticas_labores(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "talento_humano", "trabajador"]))
 ):
     return obtener_estadisticas_labores_crud(db, usuario)

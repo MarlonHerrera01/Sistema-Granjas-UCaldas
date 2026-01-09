@@ -21,7 +21,7 @@ const LaboresTable: React.FC<LaboresTableProps> = ({
     onCompletar,
     currentUser
 }) => {
-
+    const rolesPermitidos = [1, 3, 6]; // IDs de roles permitidos para ver información de labores
     // Función para obtener el color del estado
     const getEstadoBadge = (estado: string) => {
         const estados: Record<string, { color: string; icon: string }> = {
@@ -60,25 +60,25 @@ const LaboresTable: React.FC<LaboresTableProps> = ({
 
     // Funciones de permisos
     const puedeEditar = (labor: Labor) => {
-        if (currentUser?.rol_id === 1) return true; // Admin
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true; // Admin
         if (labor.trabajador_id === currentUser?.id && labor.estado !== 'completada') return true;
         return false;
     };
 
     const puedeEliminar = (labor: Labor) => {
-        if (currentUser?.rol_id === 1) return true;
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true;
         if (labor.trabajador_id === currentUser?.id && labor.estado === 'pendiente') return true;
         return false;
     };
 
     const puedeCompletar = (labor: Labor) => {
         return (labor.estado === 'en_progreso' || labor.estado === 'pendiente') &&
-            (currentUser?.rol_id === 1 || labor.trabajador_id === currentUser?.id);
+            ([1, 3, 6].includes(currentUser?.rol_id) || labor.trabajador_id === currentUser?.id);
     };
 
     const puedeAsignarRecursos = (labor: Labor) => {
         return labor.estado !== 'completada' && labor.estado !== 'cancelada' &&
-            (currentUser?.rol_id === 1 || currentUser?.rol_id === 2 || currentUser?.rol_id === 5);
+            ([1, 3, 6].includes(currentUser?.rol_id));
     };
 
     return (

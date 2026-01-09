@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.CRUD.lotes import (
     get_lotes, get_lote, create_lote, update_lote, delete_lote
 )
@@ -14,7 +14,7 @@ from app.schemas.lote_schema import (
 router = APIRouter(prefix="/lotes", tags=["Lotes"])
 
 # ✅ Solo Admin gestiona lotes
-role_required = Depends(require_role(["admin"]))
+role_required = Depends(require_any_role(["admin", "docente","asesor","talento_humano", "estudiante", "trabajador"]))
 
 @router.get("/", response_model=List[LoteResponse])
 def listar_lotes(db: Session = Depends(get_db), _=role_required):

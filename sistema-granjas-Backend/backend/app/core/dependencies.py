@@ -46,19 +46,6 @@ def get_current_user(
     
     return user
 
-def require_role(role: str):
-    """
-    Dependency para requerir un rol específico
-    """
-    def role_checker(current_user: Usuario = Depends(get_current_user)):
-        if current_user.rol.nombre != role and current_user.rol.nombre != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes permisos suficientes para realizar esta acción"
-            )
-        return current_user
-    return role_checker
-
 def require_any_role(roles: list):
     """
     Dependency para requerir cualquiera de los roles especificados

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.CRUD.tipo_labores import get_all, get_by_id, create, update, delete
 from app.schemas.tipo_labor_schema import (
     TipoLaborCreate, TipoLaborUpdate, TipoLaborResponse
@@ -10,7 +10,7 @@ from app.schemas.tipo_labor_schema import (
 
 router = APIRouter(prefix="/tipos-labor", tags=["Tipos de Labor"])
 
-role_required = Depends(require_role(["admin", "asesor"]))
+role_required = Depends(require_any_role(["admin", "docente","asesor","talento_humano"]))
 
 @router.get("/", response_model=List[TipoLaborResponse])
 def listar(db: Session = Depends(get_db), _=role_required):

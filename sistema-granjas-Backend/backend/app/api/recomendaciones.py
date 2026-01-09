@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
-from app.core.dependencies import require_role, get_current_user
+from app.core.dependencies import require_any_role, get_current_user
 from app.CRUD.recomendaciones import *
 from app.schemas.recomendacion_schema import (
     RecomendacionCreate, RecomendacionUpdate, RecomendacionResponse,
@@ -19,7 +19,7 @@ def crear(
     data: RecomendacionCreate, 
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(roles_recomendacion))
+    _ = Depends(require_any_role(roles_recomendacion))
 ):
     return crear_recomendacion(db, data, usuario.id)
 
@@ -53,7 +53,7 @@ def editar(
     data: RecomendacionUpdate, 
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(roles_recomendacion))
+    _ = Depends(require_any_role(roles_recomendacion))
 ):
     rec = obtener_recomendacion(db, id, usuario)
     if not rec:
@@ -65,7 +65,7 @@ def eliminar(
     id: int, 
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin"]))  # Solo admin puede eliminar
+    _ = Depends(require_any_role(["admin"]))  # Solo admin puede eliminar
 ):
     rec = obtener_recomendacion(db, id, usuario)
     if not rec:
@@ -81,7 +81,7 @@ def aprobar_recomendacion(
     data: AprobacionRecomendacionRequest,
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))  # Solo admin puede aprobar
+    _ = Depends(require_any_role(["admin", "docente"]))  # Solo admin puede aprobar
 ):
     """Aprobar o rechazar una recomendación"""
     return aprobar_recomendacion_crud(db, id, data, usuario)
@@ -125,7 +125,7 @@ def listar_por_lote(
 def obtener_estadisticas(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user),
-    _ = Depends(require_role(["admin", "docente"]))
+    _ = Depends(require_any_role(["admin", "docente"]))
 ):
     """Obtener estadísticas de recomendaciones"""
     return obtener_estadisticas_recomendaciones(db, usuario)

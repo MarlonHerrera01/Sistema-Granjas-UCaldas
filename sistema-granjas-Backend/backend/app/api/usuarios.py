@@ -14,13 +14,13 @@ from app.CRUD.usuarios import (
 )
 from app.CRUD.roles import get_rol_by_id
 from app.schemas.usuario_schema import UsuarioResponse, UsuarioUpdate
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, require_any_role
 from app.db.models import Usuario
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
 # ✅ FORMA 1: Usando dependencies en el decorador (CORREGIDO)
-@router.get("/", response_model=List[UsuarioResponse], dependencies=[Depends(require_role("admin"))])
+@router.get("/", response_model=List[UsuarioResponse], dependencies=[Depends(require_any_role(["admin","talento_humano","docente","asesor","estudiante","trabajador"]))])
 def listar_usuarios(
     skip: int = 0,
     limit: int = 100,
@@ -55,7 +55,7 @@ def listar_usuarios(
 def obtener_usuario(
     usuario_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role("admin"))
+    current_user: Usuario = Depends(require_any_role("admin"))
 ):
     """
     Obtener un usuario específico por ID (solo admin)
@@ -82,7 +82,7 @@ def actualizar_usuario(
     usuario_id: int,
     usuario_update: UsuarioUpdate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role("admin"))
+    current_user: Usuario = Depends(require_any_role("admin"))
 ):
     """
     Actualizar información de un usuario (solo admin)
@@ -124,7 +124,7 @@ def cambiar_rol(
     usuario_id: int,
     rol_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role("admin"))
+    current_user: Usuario = Depends(require_any_role("admin"))
 ):
     """
     Cambiar rol de un usuario (solo admin)
@@ -157,7 +157,7 @@ def cambiar_rol(
 def eliminar_usuario(
     usuario_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role("admin"))
+    current_user: Usuario = Depends(require_any_role("admin"))
 ):
     """
     Eliminar (desactivar) un usuario (solo admin)
@@ -190,7 +190,7 @@ def obtener_mi_perfil(current_user: Usuario = Depends(get_current_user)):
 def buscar_usuario_por_email(
     email: str,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role("admin"))
+    current_user: Usuario = Depends(require_any_role("admin"))
 ):
     """
     Buscar usuario por email (solo admin)

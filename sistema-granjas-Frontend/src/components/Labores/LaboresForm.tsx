@@ -45,6 +45,7 @@ const LaborForm: React.FC<LaborFormProps> = ({
     // Roles
     const esAdmin = currentUser?.rol_id === 1;
     const esDocente = currentUser?.rol_id === 2 || currentUser?.rol_id === 5;
+    const esTalentoHumano = currentUser?.rol_id === 6;
     const esTrabajador = currentUser?.rol_id === 3;
 
     // Auto-seleccionar trabajador si es trabajador
@@ -212,7 +213,7 @@ const LaborForm: React.FC<LaborFormProps> = ({
                     </div>
 
                     {/* Trabajador */}
-                    {(esAdmin || esDocente) && (
+                    {(esAdmin || esDocente || esTalentoHumano) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Trabajador *
@@ -295,7 +296,7 @@ const LaborForm: React.FC<LaborFormProps> = ({
                     </div>
 
                     {/* Estado (solo en edición) */}
-                    {esEdicion && (
+                    {esEdicion && (esAdmin || esTalentoHumano || esTrabajador) && (
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -316,7 +317,7 @@ const LaborForm: React.FC<LaborFormProps> = ({
                             </div>
 
                             {/* Avance */}
-                            <div>
+                            {(esTalentoHumano || esAdmin || esTrabajador) && (<div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Avance (%)
                                 </label>
@@ -339,7 +340,7 @@ const LaborForm: React.FC<LaborFormProps> = ({
                                     <span className="text-xs text-gray-500">50%</span>
                                     <span className="text-xs text-gray-500">100%</span>
                                 </div>
-                            </div>
+                            </div>)}
                         </>
                     )}
 

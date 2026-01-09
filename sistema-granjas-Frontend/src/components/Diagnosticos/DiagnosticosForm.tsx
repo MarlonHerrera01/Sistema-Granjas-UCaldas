@@ -44,7 +44,7 @@ const DiagnosticoForm: React.FC<DiagnosticoFormProps> = ({
 
     // Roles
     const esAdmin = currentUser?.rol_id === 1;
-    const esDocente = currentUser?.rol_id === 2 || currentUser?.rol_id === 3;
+    const esDocente = currentUser?.rol_id === 2 || currentUser?.rol_id === 5;
     const esEstudiante = currentUser?.rol_id === 4;
 
     // Auto-seleccionar lote si solo hay uno
@@ -164,7 +164,7 @@ const DiagnosticoForm: React.FC<DiagnosticoFormProps> = ({
                 <div className="space-y-6">
 
                     {/* 👇 AÑADE ESTA SECCIÓN - ESTADO (solo en edición) */}
-                    {esEdicion && (
+                    {esEdicion && (esAdmin || esDocente) && (
                         <div className="mb-4 p-4 border rounded-lg bg-gray-50">
                             <div className="flex justify-between items-center mb-3">
                                 <label className="block text-sm font-medium text-gray-700">
@@ -251,7 +251,7 @@ const DiagnosticoForm: React.FC<DiagnosticoFormProps> = ({
                     </div>
 
                     {/* Estudiante */}
-                    {(esAdmin || esDocente) && (
+                    {(esAdmin || esEstudiante) && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Estudiante *</label>
                             <select

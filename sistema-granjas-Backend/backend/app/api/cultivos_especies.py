@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.models import CultivoEspecie
 from app.db.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import require_any_role
 from app.CRUD.cultivos_especies import (
     get_all, get_by_id, create, update, delete
 )
@@ -13,7 +13,7 @@ from app.schemas.cultivo_especie_schema import (
 
 router = APIRouter(prefix="/cultivos", tags=["Cultivos / Especies"])
 
-role_required = Depends(require_role(["admin"]))
+role_required = Depends(require_any_role(["admin"]))
 
 @router.get("/", response_model=List[CultivoEspecieResponse])
 def listar(db: Session = Depends(get_db), _=role_required):

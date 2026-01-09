@@ -37,7 +37,7 @@ const DiagnosticosTable: React.FC<DiagnosticosTableProps> = ({
     const [lotesDetallados, setLotesDetallados] = useState<Record<number, LoteDetallado>>({});
     const [cargandoLotes, setCargandoLotes] = useState<Record<number, boolean>>({});
     const [lotesCargados, setLotesCargados] = useState<Set<number>>(new Set());
-
+    const rolesPermitidos = [1, 2, 4, 5]; // IDs de roles permitidos para ver información de lotes
     // Identificar lotes únicos que necesitan ser cargados
     const lotesACargar = useMemo(() => {
         const lotesUnicos = new Set<number>();
@@ -182,18 +182,18 @@ const DiagnosticosTable: React.FC<DiagnosticosTableProps> = ({
 
     // Funciones de permisos (sin cambios)...
     const puedeEditar = (diagnostico: DiagnosticoItem) => {
-        if (currentUser?.rol_id === 1) return true;
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true;
         if (diagnostico.estudiante_id === currentUser?.id && diagnostico.estado === 'abierto') return true;
         if (diagnostico.docente_id === currentUser?.id && diagnostico.estado !== 'cerrado') return true;
         return false;
     };
 
     const puedeAsignarDocente = (diagnostico: DiagnosticoItem) => {
-        return currentUser?.rol_id === 1 && diagnostico.estado === 'abierto' && !diagnostico.docente_id;
+        return rolesPermitidos.includes(currentUser?.rol_id) && diagnostico.estado === 'abierto' && !diagnostico.docente_id;
     };
 
     const puedeCerrar = (diagnostico: DiagnosticoItem) => {
-        if (currentUser?.rol_id === 1) return diagnostico.estado !== 'cerrado';
+        if ([1, 2, 5].includes(currentUser?.rol_id)) return diagnostico.estado !== 'cerrado';
         if (diagnostico.docente_id === currentUser?.id) return diagnostico.estado !== 'cerrado';
         return false;
     };
@@ -204,7 +204,7 @@ const DiagnosticosTable: React.FC<DiagnosticosTableProps> = ({
     };
 
     const puedeEliminar = (diagnostico: DiagnosticoItem) => {
-        if (currentUser?.rol_id === 1) return true;
+        if (rolesPermitidos.includes(currentUser?.rol_id)) return true;
         if (diagnostico.estudiante_id === currentUser?.id && diagnostico.estado === 'abierto') return true;
         return false;
     };

@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from app.db.models import (
     Labor, Usuario, Recomendacion, Lote, Herramienta, Insumo,
     MovimientoHerramienta, MovimientoInsumo, AsignacionHerramienta,
-    Evidencia, TipoLabor, Granja, Programa
+    Evidencia, TipoLabor, Granja, Programa, usuario_programa
 )
 from app.schemas.labor_schema import (
     LaborCreate, LaborUpdate, AsignacionHerramientaRequest,
@@ -37,11 +37,21 @@ def crear_labor_crud(db: Session, data: LaborCreate, usuario: Usuario):
     
     # Verificar que talento_humano solo asigne a trabajadores de su programa
     if usuario.rol.nombre == "talento_humano":
-        # Obtener programa del trabajador
-        trabajador_programa = db.query(Usuario).filter(Usuario.id == data.trabajador_id).first()
-        if not trabajador_programa or trabajador_programa.programa_id != usuario.programa_id:
+        # Obtener el trabajador
+        trabajador_obj = db.query(Usuario).filter(Usuario.id == data.trabajador_id).first()
+        if not trabajador_obj:
+            raise HTTPException(404, "Trabajador no encontrado")
+        
+        # Obtener IDs de programas del trabajador
+        trabajador_programa_ids = {programa.id for programa in trabajador_obj.programas}
+        
+        # Obtener IDs de programas del usuario de talento_humano
+        usuario_programa_ids = {programa.id for programa in usuario.programas}
+        
+        # Verificar que comparten al menos un programa
+        if not trabajador_programa_ids.intersection(usuario_programa_ids):
             raise HTTPException(403, "Solo puede asignar labores a trabajadores de su programa")
-    
+        
     labor = Labor(
         estado=data.estado,
         avance_porcentaje=data.avance_porcentaje,
@@ -90,8 +100,17 @@ def listar_labores_crud(
     elif usuario.rol.nombre == "docente" or usuario.rol.nombre == "asesor":
         query = query.join(Recomendacion).filter(Recomendacion.docente_id == usuario.id)
     elif usuario.rol.nombre == "talento_humano":
-        # Filtrar por trabajadores del mismo programa
-        query = query.join(Usuario, Labor.trabajador_id == Usuario.id).filter(Usuario.programa_id == usuario.programa_id)
+        # Obtener IDs de programas del usuario de talento_humano
+        programa_ids = [programa.id for programa in usuario.programas]
+        
+        if programa_ids:
+            # Filtrar trabajadores que tengan al menos uno de los mismos programas
+            query = query.join(Usuario, Labor.trabajador_id == Usuario.id)\
+                        .join(usuario_programa, Usuario.id == usuario_programa.c.usuario_id)\
+                        .filter(usuario_programa.c.programa_id.in_(programa_ids))
+        else:
+            # Si el usuario no tiene programas, no muestra nada
+            query = query.filter(False)
     
     total = query.count()
     items = query.offset(skip).limit(limit).all()
@@ -147,7 +166,18 @@ def obtener_labor_objeto(db: Session, id: int, usuario: Usuario = None):
                 return None
         elif usuario.rol.nombre == "talento_humano":
             trabajador = labor.trabajador
-            if not trabajador or trabajador.programa_id != usuario.programa_id:
+            if not trabajador:
+                return None
+            
+            # CORREGIDO: Verificar que comparten al menos un programa
+            # Obtener IDs de programas del trabajador
+            trabajador_programa_ids = {programa.id for programa in trabajador.programas}
+            
+            # Obtener IDs de programas del usuario de talento_humano
+            usuario_programa_ids = {programa.id for programa in usuario.programas}
+            
+            # Verificar que comparten al menos un programa
+            if not trabajador_programa_ids.intersection(usuario_programa_ids):
                 return None
     
     return labor
@@ -475,7 +505,18 @@ def obtener_estadisticas_labores_crud(db: Session, usuario: Usuario):
     elif usuario.rol.nombre == "docente" or usuario.rol.nombre == "asesor":
         query = query.join(Recomendacion).filter(Recomendacion.docente_id == usuario.id)
     elif usuario.rol.nombre == "talento_humano":
-        query = query.join(Usuario, Labor.trabajador_id == Usuario.id).filter(Usuario.programa_id == usuario.programa_id)
+        # CORREGIDO: Filtrar por programas del usuario (relación many-to-many)
+        # Obtener IDs de programas del usuario
+        programa_ids = [programa.id for programa in usuario.programas]
+        
+        if programa_ids:
+            # Filtrar trabajadores que compartan al menos un programa
+            query = query.join(Usuario, Labor.trabajador_id == Usuario.id)\
+                         .join(usuario_programa, Usuario.id == usuario_programa.c.usuario_id)\
+                         .filter(usuario_programa.c.programa_id.in_(programa_ids))
+        else:
+            # Usuario sin programas asignados - no muestra nada
+            query = query.filter(False)
     
     total = query.count()
     
@@ -502,11 +543,19 @@ def _verificar_permisos_labor(labor: Labor, usuario: Usuario, accion: str):
         return
     
     if rol == "talento_humano":
-        if accion in ["asignar_recursos", "editar"]:
+        if accion in ["asignar_recursos", "editar", "eliminar", "devolver", "completar"]:
             trabajador = labor.trabajador
-            if trabajador and trabajador.programa_id == usuario.programa_id:
-                return
-            raise HTTPException(403, f"Solo puede {accion} labores de su programa")
+            if not trabajador:
+                raise HTTPException(403, f"No tiene permisos para {accion} esta labor")
+            
+            # CORREGIDO: Verificar que comparten al menos un programa
+            trabajador_programa_ids = {programa.id for programa in trabajador.programas}
+            usuario_programa_ids = {programa.id for programa in usuario.programas}
+            
+            if not trabajador_programa_ids.intersection(usuario_programa_ids):
+                raise HTTPException(403, f"Solo puede {accion} labores de su programa")
+            return
+        
         raise HTTPException(403, f"No tiene permisos para {accion} esta labor")
     
     if rol == "docente" or rol == "asesor":
