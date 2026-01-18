@@ -1,26 +1,21 @@
 import json
 import boto3
+import ssl
+import time
+import logging
+import warnings
 from botocore.config import Config
 from pydantic_settings import BaseSettings
 from typing import Dict, List, Optional
-import logging
-import urllib3
-import time
-import warnings
-import logging
-import sys
 
-# Configurar logging ANTES de crear el logger
+# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout,
-    force=True  # <-- IMPORTANTE: Forzar reconfiguración
+    stream=None  # Usar default, Render captura stdout
 )
 
-# Configurar logger
 logger = logging.getLogger(__name__)
-logger.info("🆕 config.py cargado")
 
 class Settings(BaseSettings):
     # === Variables de entorno requeridas ===
@@ -40,8 +35,8 @@ class Settings(BaseSettings):
     R2_ACCESS_KEY: str
     R2_SECRET_KEY: str
     R2_BUCKET_NAME: str
-    R2_ENDPOINT: str  # ejemplo: https://xxxx.r2.cloudflarestorage.com
-    R2_PUBLIC_URL: str  # URL pública para acceder a los archivos
+    R2_ENDPOINT: str
+    R2_PUBLIC_URL: str
 
     # === Variables de negocio ===
     ROLES_POR_DEFECTO: Optional[Dict] = None
@@ -55,55 +50,26 @@ class Settings(BaseSettings):
         extra = "allow"
 
     def init_storage(self):
-        """Inicializa cliente R2 - SOLUCIÓN DEFINITIVA"""
-        logger.info("🔄 Inicializando cliente R2 para Cloudflare...")
-        
-        # Deshabilitar warnings de SSL temporalmente
-        warnings.filterwarnings('ignore', category=urllib3.exceptions.InsecureRequestWarning)
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
-        # Configuración optimizada para Cloudflare R2
-        s3_config = Config(
-            region_name="auto",
-            signature_version='s3v4',
-            connect_timeout=15,
-            read_timeout=30,
-            max_pool_connections=50,
-            retries={
-                'max_attempts': 3,
-                'mode': 'standard'
-            },
-            s3={
-                'addressing_style': 'virtual',
-                'payload_signing_enabled': False  # Cloudflare R2 no necesita payload signing
-            }
-        )
+        """Inicializa cliente R2 simplificado"""
+        logger.info("Inicializando cliente R2...")
         
         try:
-            logger.info(f"🔗 Conectando a: {self.R2_ENDPOINT}")
-            logger.info(f"📦 Bucket: {self.R2_BUCKET_NAME}")
+            # Configuración mínima para R2
+            s3_config = Config(
+                region_name="auto",
+                signature_version='s3v4',
+                connect_timeout=10,
+                read_timeout=30,
+                retries={'max_attempts': 3},
+                s3={'addressing_style': 'virtual'}
+            )
             
-            # Monkey patch CRÍTICO para deshabilitar verificación SSL en boto3
-            import botocore.httpsession
-            original_send = botocore.httpsession.URLLib3Session.send
-            
-            def patched_send(self, request, **kwargs):
-                # Forzar no verificación SSL y configurar timeouts
-                kwargs['verify'] = False
-                kwargs['timeout'] = (15, 30)
-                # Forzar TLS 1.2 si es posible
-                import ssl
-                if 'ssl_context' not in kwargs:
-                    context = ssl.create_default_context()
-                    context.minimum_version = ssl.TLSVersion.TLSv1_2
-                    kwargs['ssl_context'] = context
-                return original_send(self, request, **kwargs)
-            
-            # Aplicar el patch
-            botocore.httpsession.URLLib3Session.send = patched_send
-            
-            # Crear sesión y cliente
+            # Crear sesión
             session = boto3.Session()
+            
+            # IMPORTANTE: Crear contexto SSL que fuerza TLS 1.2+
+            ssl_context = ssl.create_default_context()
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
             
             self.r2_client = session.client(
                 's3',
@@ -113,142 +79,55 @@ class Settings(BaseSettings):
                 config=s3_config
             )
             
-            # ===== TEST DE CONEXIÓN COMPLETO =====
-            logger.info("🧪 Realizando tests de conexión R2...")
-            
-            # 1. Test de listado de buckets
-            start_time = time.time()
+            # Test simple de conexión
+            logger.info("Probando conexión R2...")
             response = self.r2_client.list_buckets()
-            elapsed = time.time() - start_time
+            logger.info(f"Conexión exitosa. Buckets: {len(response['Buckets'])}")
             
-            bucket_names = [b['Name'] for b in response['Buckets']]
-            logger.info(f"✅ List buckets exitoso ({elapsed:.2f}s)")
-            logger.info(f"   → Buckets disponibles: {bucket_names}")
-            
-            # 2. Verificar que nuestro bucket existe
+            # Verificar bucket específico
             try:
                 self.r2_client.head_bucket(Bucket=self.R2_BUCKET_NAME)
-                logger.info(f"✅ Bucket '{self.R2_BUCKET_NAME}' accesible")
+                logger.info(f"Bucket '{self.R2_BUCKET_NAME}' accesible")
             except Exception as e:
-                logger.warning(f"⚠️  Bucket no accesible (puede que no exista): {e}")
-            
-            # 3. Test de PUT real
-            test_key = f"connection-test-{int(time.time())}.txt"
-            logger.info(f"📤 Probando PUT con archivo: {test_key}")
-            
-            self.r2_client.put_object(
-                Bucket=self.R2_BUCKET_NAME,
-                Key=test_key,
-                Body=b"Connection test from Render at " + str(time.time()).encode(),
-                ContentType='text/plain',
-                Metadata={'test': 'true', 'timestamp': str(time.time())}
-            )
-            logger.info("✅ PUT test exitoso")
-            
-            # 4. Test de GET (opcional)
-            try:
-                obj = self.r2_client.get_object(Bucket=self.R2_BUCKET_NAME, Key=test_key)
-                content = obj['Body'].read().decode('utf-8')
-                logger.info(f"✅ GET test exitoso. Contenido: {content[:50]}...")
-            except Exception as e:
-                logger.warning(f"⚠️  GET test falló (pero PUT funcionó): {e}")
-            
-            # 5. Test de DELETE
-            self.r2_client.delete_object(Bucket=self.R2_BUCKET_NAME, Key=test_key)
-            logger.info("✅ DELETE test exitoso")
-            
-            # 6. Información de URLs
-            public_url = f"{self.R2_PUBLIC_URL}/{test_key}" if hasattr(self, 'R2_PUBLIC_URL') else "No configurada"
-            logger.info(f"🌐 URL pública base: {self.R2_PUBLIC_URL if hasattr(self, 'R2_PUBLIC_URL') else 'No configurada'}")
-            
-            logger.info("🎉 ✅✅✅ CLIENTE R2 INICIALIZADO CON ÉXITO ✅✅✅")
-            logger.info(f"   • Endpoint: {self.R2_ENDPOINT}")
-            logger.info(f"   • Bucket: {self.R2_BUCKET_NAME}")
-            logger.info(f"   • SSL: Deshabilitado para testing")
+                logger.warning(f"Bucket no accesible: {e}")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌💥 ERROR CRÍTICO INICIALIZANDO R2 💥❌")
-            logger.error(f"   Tipo: {type(e).__name__}")
-            logger.error(f"   Mensaje: {str(e)}")
+            logger.error(f"Error inicializando R2: {e}")
             
-            # Intentar solución de emergencia
+            # Intentar con verificación SSL deshabilitada
             try:
-                logger.info("🆘 Intentando solución de emergencia...")
-                self._emergency_storage_init()
+                logger.warning("Intentando conexión sin verificación SSL...")
+                
+                # Deshabilitar warnings
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                
+                # Crear cliente sin verificación SSL
+                self.r2_client = boto3.client(
+                    's3',
+                    endpoint_url=self.R2_ENDPOINT,
+                    aws_access_key_id=self.R2_ACCESS_KEY,
+                    aws_secret_access_key=self.R2_SECRET_KEY,
+                    config=Config(
+                        region_name='auto',
+                        signature_version='s3v4',
+                        connect_timeout=15,
+                        read_timeout=30
+                    ),
+                    verify=False  # ⚠️ Deshabilitar verificación SSL
+                )
+                
+                # Test
+                response = self.r2_client.list_buckets()
+                logger.warning(f"⚠️ Conexión exitosa SIN verificación SSL. Buckets: {len(response['Buckets'])}")
                 return True
-            except Exception as emergency_e:
-                logger.error(f"💣 Solución de emergencia también falló: {emergency_e}")
+                
+            except Exception as e2:
+                logger.error(f"También falló sin verificación SSL: {e2}")
                 self.r2_client = None
                 return False
-    
-    def _emergency_storage_init(self):
-        """Solución de emergencia si la principal falla"""
-        logger.warning("🚨 USANDO MODO DE EMERGENCIA PARA R2")
-        
-        # Crear un cliente MUY básico con configuración mínima
-        self.r2_client = boto3.client(
-            's3',
-            endpoint_url=self.R2_ENDPOINT,
-            aws_access_key_id=self.R2_ACCESS_KEY,
-            aws_secret_access_key=self.R2_SECRET_KEY,
-            config=Config(
-                region_name='auto',
-                signature_version='s3v4',
-                connect_timeout=30,
-                read_timeout=60,
-                retries={'max_attempts': 1}
-            )
-        )
-        
-        # Forzar no SSL verification a nivel de sesión HTTP
-        import botocore.session
-        from botocore.httpsession import URLLib3Session
-        
-        class InsecureURLLib3Session(URLLib3Session):
-            def send(self, request):
-                # Sobrescribir completamente para evitar SSL verification
-                import urllib3
-                import urllib.parse
-                
-                # Crear pool manager inseguro
-                http = urllib3.PoolManager(
-                    cert_reqs='CERT_NONE',
-                    assert_hostname=False,
-                    retries=urllib3.Retry(1)
-                )
-                
-                # Preparar request
-                url = request.url
-                method = request.method
-                headers = dict(request.headers)
-                body = request.body
-                
-                # Enviar request
-                resp = http.request(
-                    method,
-                    url,
-                    body=body,
-                    headers=headers,
-                    timeout=urllib3.Timeout(connect=30, read=60),
-                    retries=urllib3.Retry(1)
-                )
-                
-                # Crear respuesta compatible
-                from botocore.awsrequest import AWSResponse
-                return AWSResponse(
-                    url=url,
-                    status_code=resp.status,
-                    headers=resp.headers,
-                    raw=resp
-                )
-        
-        # Reemplazar la sesión HTTP
-        botocore_session = botocore.session.get_session()
-        botocore_session._session = InsecureURLLib3Session()
-        
-        logger.warning("✅ Modo emergencia activado (SSL completamente deshabilitado)")
 
 # Crear instancia de settings
 settings = Settings()
@@ -271,16 +150,10 @@ settings.PROGRAMAS_AGRICOLAS = parse_json_field(settings.PROGRAMAS_AGRICOLAS, []
 settings.PROGRAMAS_PECUARIOS = parse_json_field(settings.PROGRAMAS_PECUARIOS, [])
 
 # Inicializar almacenamiento R2
-logger.info("=" * 60)
-logger.info("INICIALIZANDO SISTEMA DE ALMACENAMIENTO R2")
-logger.info("=" * 60)
-
+logger.info("Inicializando sistema de almacenamiento R2...")
 storage_success = settings.init_storage()
 
 if storage_success:
-    logger.info("🎊🎊🎊 SISTEMA R2 LISTO PARA USO 🎊🎊🎊")
+    logger.info("Sistema R2 listo para uso")
 else:
-    logger.critical("💀💀💀 SISTEMA R2 NO DISPONIBLE - LA APP FUNCIONARÁ SIN ALMACENAMIENTO 💀💀💀")
-    logger.critical("   Las operaciones de upload fallarán hasta que se solucione R2")
-
-logger.info("=" * 60)
+    logger.error("Sistema R2 no disponible - uploads fallarán")
