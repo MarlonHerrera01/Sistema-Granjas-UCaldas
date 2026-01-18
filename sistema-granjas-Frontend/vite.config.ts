@@ -6,6 +6,24 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react()],
-
+    react()
+  ],
+  
+  // AÑADIR para producción:
+  build: {
+    outDir: 'dist',
+    sourcemap: false, // Desactivar en producción
+    rollupOptions: {
+      output: {
+        // Mejor organización de chunks
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@headlessui/react', '@heroicons/react']
+        }
+      }
+    }
+  },
+  
+  // IMPORTANTE para SPA en producción
+  base: '/', // Asegura rutas relativas
 })

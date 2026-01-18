@@ -1,0 +1,12 @@
+# render.yaml (en la raíz del frontend o del repo)
+services:
+  - type: web
+    name: sistema-granjas-frontend
+    env: docker
+    dockerfilePath: ./sistema-granjas-frontend/Dockerfile
+    rootDir: sistema-granjas-frontend
+    envVars:
+      - key: VITE_API_URL
+        value: https://sistema-granjas-backend.onrender.com
+    autoDeploy: true
+    healthCheckPath: /
