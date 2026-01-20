@@ -23,12 +23,12 @@ export default function Login() {
                         <div className="flex h-22 w-22 items-center justify-center rounded-full bg-white text-green-700 text-2xl">
                             <img
                                 src="/icons/icon-512.png" // Ruta a tu icono en la carpeta public/icons
-                                alt="Sistema de granjas"
+                                alt="Sistema Granjas"
                                 className="h-22 w-22" // Ajusta el tamaño según necesites
                             />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold">Sistema de granjas</h1>
+                            <h1 className="text-2xl font-bold">Sistema Granjas</h1>
                             <p className="text-sm opacity-90">Sistema de Gestión Agrícola y Pecuario</p>
                         </div>
                     </div>

@@ -326,7 +326,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                     <div className="text-xs text-gray-500">
                         <div className="flex items-center justify-between mb-1">
                             <span>Sistema:</span>
-                            <span className="font-medium">Sistema de granjas V1.0</span>
+                            <span className="font-medium">Sistema Granjas V1.0</span>
                         </div>
                         <div className="flex items-center justify-between mb-1">
                             <span>Estado:</span>
