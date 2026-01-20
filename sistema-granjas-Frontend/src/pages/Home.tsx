@@ -4,7 +4,7 @@ export default function Home() {
     return (
         <div className="flex flex-col items-center justify-center h-screen bg-green-50">
             <h1 className="text-3xl font-bold text-green-700 mb-4">
-                Bienvenido al Sistema de Granjas 🌾
+                Bienvenido al Sistema Granjas 🌾
             </h1>
             {token ? (
                 <p className="text-gray-700">Tu sesión está activa ✅</p>

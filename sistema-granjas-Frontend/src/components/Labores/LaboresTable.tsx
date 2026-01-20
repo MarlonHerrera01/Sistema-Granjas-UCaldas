@@ -102,9 +102,9 @@ const LaboresTable: React.FC<LaboresTableProps> = ({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Fechas
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {(currentUser?.rol_id && rolesPermitidos.includes(currentUser?.rol_id)) && (<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Acciones
-                            </th>
+                            </th>)}
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -185,7 +185,7 @@ const LaboresTable: React.FC<LaboresTableProps> = ({
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    {(currentUser?.rol_id && rolesPermitidos.includes(currentUser?.rol_id)) && (<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() => onVerDetalles(labor)}
@@ -235,7 +235,7 @@ const LaboresTable: React.FC<LaboresTableProps> = ({
                                                 </button>
                                             )}
                                         </div>
-                                    </td>
+                                    </td>)}
                                 </tr>
                             ))
                         )}

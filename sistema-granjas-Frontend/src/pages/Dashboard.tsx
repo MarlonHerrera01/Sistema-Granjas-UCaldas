@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
                 <main className="flex-1 ml-64 p-8">
                     {/* Banner de bienvenida */}
                     <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-8 mb-8 text-white">
-                        <h1 className="text-3xl font-bold mb-4">Bienvenido al Sistema de granjas</h1>
+                        <h1 className="text-3xl font-bold mb-4">Bienvenido al Sistema Granjas</h1>
                         <p className="text-green-100 text-lg max-w-3xl">
                             Una plataforma integral para la gestión agrícola que conecta estudiantes,
                             sesiones, trabajadores y administradores en un ecosistema colaborativo

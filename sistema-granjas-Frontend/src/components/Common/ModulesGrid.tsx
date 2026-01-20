@@ -20,7 +20,7 @@ const ModulesGrid: React.FC<ModulesGridProps> = ({ navigate }) => {
             asesor: ['diagnosticos', 'recomendaciones', 'labores'],
             docente: ['diagnosticos', 'recomendaciones', 'labores'],
             talento_humano: ['recomendaciones', 'labores'],
-            estudiante: ['diagnosticos', 'recomendaciones'],
+            estudiante: ['diagnosticos', 'recomendaciones', 'labores'],
             trabajador: ['labores']
         };
 

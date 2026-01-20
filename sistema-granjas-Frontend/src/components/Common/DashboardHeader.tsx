@@ -11,7 +11,7 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-    title = "Sistema de granjas",
+    title = "Sistema Granjas",
     selectedModule,
     onBack
 }) => {
@@ -111,8 +111,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                             />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-green-700">Sistema de granjas</h1>
-                            <p className="text-gray-500 text-sm">Sistema de Gestión Agrícola Integral</p>
+                            <h1 className="text-2xl font-bold text-green-700">Sistema Granjas</h1>
+                            <p className="text-gray-500 text-sm">Sistema de Gestión Agrícola y Pecuario.</p>
                         </div>
                     </div>
 
